@@ -530,6 +530,29 @@ body {
   height: 16px;
 }
 
+.btn-edit-trans {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 0.25rem;
+  border-radius: 6px;
+  transition: var(--transition-fast);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-edit-trans:hover {
+  color: var(--primary);
+  background-color: var(--primary-light);
+}
+
+.btn-edit-trans svg {
+  width: 16px;
+  height: 16px;
+}
+
 /* 7. Aba Transações (Extrato Completo) */
 .transactions-filter-bar {
   display: flex;

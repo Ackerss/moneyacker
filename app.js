@@ -1193,11 +1193,17 @@ function renderRecentTransactions() {
             <span class="transaction-date">${formatDate(t.date)} • ${category.name}</span>
           </div>
         </div>
-        <div class="transaction-value-action">
-          <span class="transaction-value ${t.type}">
+        <div class="transaction-value-action" style="display: flex; gap: 0.25rem; align-items: center;">
+          <span class="transaction-value ${t.type}" style="margin-right: 0.25rem;">
             ${t.type === 'income' ? '+' : '-'} ${formatCurrency(t.amount)}
           </span>
-          <button class="btn-delete-trans" data-id="${t.id}" title="Excluir transação">
+          <button class="btn-edit-trans" data-id="${t.id}" title="Editar Transação">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+              <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+            </svg>
+          </button>
+          <button class="btn-delete-trans" data-id="${t.id}" title="Excluir Transação">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <polyline points="3 6 5 6 21 6"></polyline>
               <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -1213,6 +1219,14 @@ function renderRecentTransactions() {
       btn.addEventListener('click', (e) => {
         const transId = btn.getAttribute('data-id');
         deleteTransaction(transId);
+      });
+    });
+
+    // Evento de editar transações
+    document.querySelectorAll('.btn-edit-trans').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const transId = btn.getAttribute('data-id');
+        editTransaction(transId);
       });
     });
   }
@@ -1530,12 +1544,20 @@ function renderTransactionsTable() {
           ${t.type === 'income' ? '+' : '-'} ${formatCurrency(t.amount)}
         </td>
         <td style="text-align: center;">
-          <button class="btn-delete-trans table-delete-btn" data-id="${t.id}">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px; height:16px;">
-              <polyline points="3 6 5 6 21 6"></polyline>
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-            </svg>
-          </button>
+          <div style="display: flex; gap: 0.4rem; justify-content: center; align-items: center;">
+            <button class="btn-edit-trans table-edit-btn" data-id="${t.id}" title="Editar Transação">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px; height:16px;">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+            </button>
+            <button class="btn-delete-trans table-delete-btn" data-id="${t.id}" title="Excluir Transação">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px; height:16px;">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+            </button>
+          </div>
         </td>
       `;
       tableList.appendChild(tr);
@@ -1546,6 +1568,14 @@ function renderTransactionsTable() {
       btn.addEventListener('click', () => {
         const id = btn.getAttribute('data-id');
         deleteTransactionFromTable(id);
+      });
+    });
+
+    // Evento editar da tabela
+    document.querySelectorAll('.table-edit-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const id = btn.getAttribute('data-id');
+        editTransaction(id);
       });
     });
   }
@@ -1836,6 +1866,7 @@ document.getElementById('btn-cancel-budget').addEventListener('click', closeBudg
 
 function openTransactionModal(type) {
   transForm.reset();
+  document.getElementById('trans-id').value = ''; // Limpar o ID para novas transações
   transAmount.value = '0,00';
   transTypeInput.value = type;
   
@@ -1880,6 +1911,69 @@ function closeTransactionModal() {
   transactionModal.classList.remove('active');
 }
 
+function editTransaction(id) {
+  const trans = state.transactions.find(t => t.id === id);
+  if (!trans) return;
+
+  // Preencher ID e tipo
+  document.getElementById('trans-id').value = trans.id;
+  transTypeInput.value = trans.type;
+  
+  // Formatar o valor para a máscara monetária (Ex: 3500.00 -> 3.500,00)
+  const formattedVal = new Intl.NumberFormat('pt-BR', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  }).format(trans.amount);
+  transAmount.value = formattedVal;
+
+  transDesc.value = trans.description;
+  transDate.value = trans.date;
+  
+  // Preencher categorias correspondentes e selecionar a correta
+  populateModalCategories(trans.type);
+  transCategory.value = trans.category;
+  
+  // Configurar Forma de Pagamento e Parcelas no Modal
+  if (trans.type === 'expense') {
+    paymentInstallmentContainer.style.display = 'block';
+    
+    // Repopular dropdown de formas de pagamento
+    transPaymentMethod.innerHTML = '<option value="cash">💰 Saldo da Conta / Dinheiro</option>';
+    state.cards.forEach(card => {
+      const opt = document.createElement('option');
+      opt.value = card.id;
+      opt.textContent = `💳 ${card.name}`;
+      transPaymentMethod.appendChild(opt);
+    });
+    
+    transPaymentMethod.value = trans.paymentMethod || 'cash';
+    
+    const isCard = trans.paymentMethod && trans.paymentMethod !== 'cash';
+    if (isCard) {
+      installmentSelectGroup.style.display = 'block';
+      transInstallments.value = trans.totalInstallments || '1';
+    } else {
+      installmentSelectGroup.style.display = 'none';
+      transInstallments.value = '1';
+    }
+  } else {
+    paymentInstallmentContainer.style.display = 'none';
+  }
+
+  // Alterar título do modal e texto do botão
+  if (trans.type === 'income') {
+    modalTitle.textContent = 'Editar Receita';
+    document.getElementById('btn-save-transaction').className = 'btn btn-income';
+    document.getElementById('btn-save-transaction').textContent = 'Atualizar Receita';
+  } else {
+    modalTitle.textContent = 'Editar Despesa';
+    document.getElementById('btn-save-transaction').className = 'btn btn-expense';
+    document.getElementById('btn-save-transaction').textContent = 'Atualizar Despesa';
+  }
+
+  transactionModal.classList.add('active');
+}
+
 function populateModalCategories(type) {
   transCategory.innerHTML = '';
   state.categories[type].forEach(c => {
@@ -1911,6 +2005,8 @@ transForm.addEventListener('submit', async (e) => {
 
   // Verificar se estamos confirmando uma transação pendente do MacroDroid
   const isConfirmingPending = transIdInput && state.transactions.some(t => t.id === transIdInput && t.status === 'pending');
+  // Verificar se estamos editando uma transação já confirmada
+  const isEditingConfirmed = transIdInput && state.transactions.some(t => t.id === transIdInput && t.status === 'confirmed');
 
   if (installments > 1) {
     const card = state.cards.find(c => c.id === paymentMethod);
@@ -1919,8 +2015,8 @@ transForm.addEventListener('submit', async (e) => {
       return;
     }
 
-    // Se estiver confirmando uma pendente e parcelando, exclui a pendente original no banco
-    if (isConfirmingPending) {
+    // Se estiver confirmando uma pendente ou editando uma confirmada e parcelando, exclui a original no banco
+    if (isConfirmingPending || isEditingConfirmed) {
       state.transactions = state.transactions.filter(t => t.id !== transIdInput);
       await dbDeleteTransaction(transIdInput);
     }
@@ -1951,8 +2047,8 @@ transForm.addEventListener('submit', async (e) => {
     }
     showToast(`${installments} parcelas geradas com sucesso!`);
   } else {
-    if (isConfirmingPending) {
-      // Confirmar transação pendente existente
+    if (isConfirmingPending || isEditingConfirmed) {
+      // Atualizar transação existente (seja pendente ou confirmada)
       const existingTrans = state.transactions.find(t => t.id === transIdInput);
       if (existingTrans) {
         existingTrans.amount = amount;
@@ -1965,7 +2061,7 @@ transForm.addEventListener('submit', async (e) => {
         
         await dbUpsertTransaction(existingTrans);
       }
-      showToast("Transação pendente confirmada!");
+      showToast(isConfirmingPending ? "Transação pendente confirmada!" : "Transação atualizada com sucesso!");
     } else {
       // Criar nova transação comum
       const newTransaction = {
