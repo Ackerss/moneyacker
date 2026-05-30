@@ -2873,3 +2873,32 @@ document.getElementById('btn-confirm-inst-all').addEventListener('click', () => 
   closeConfirmInstallmentModal();
 });
 
+// =============================================================
+// Otimizações de Teclado Virtual no Mobile (Ocultar Barra de Navegação)
+// =============================================================
+window.addEventListener('DOMContentLoaded', () => {
+  const inputsToWatch = document.querySelectorAll('input, select, textarea');
+  const mobileNav = document.querySelector('.mobile-nav');
+
+  if (mobileNav) {
+    inputsToWatch.forEach(input => {
+      input.addEventListener('focus', () => {
+        if (window.innerWidth <= 768) {
+          mobileNav.style.display = 'none';
+        }
+      });
+      
+      input.addEventListener('blur', () => {
+        // Um pequeno timeout evita piscadas rápidas ao mudar de um input para outro
+        setTimeout(() => {
+          // Só exibe se o elemento focado ativo não for outro input
+          const activeEl = document.activeElement;
+          if (window.innerWidth <= 768 && activeEl.tagName !== 'INPUT' && activeEl.tagName !== 'SELECT' && activeEl.tagName !== 'TEXTAREA') {
+            mobileNav.style.display = 'flex';
+          }
+        }, 80);
+      });
+    });
+  }
+});
+
