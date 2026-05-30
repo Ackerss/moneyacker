@@ -264,13 +264,10 @@ async function loadStateFromSupabase() {
     const { data: dbTransactions, error: transError } = await supabaseClient.from('transactions').select('*');
     if (transError) throw transError;
 
-    // Se estiver tudo vazio no Supabase, popular com os exemplos padrão automaticamente
-    if ((!dbCards || dbCards.length === 0) && (!dbTransactions || dbTransactions.length === 0)) {
-      console.log("Supabase vazio! Populando com dados de exemplo...");
-      await initializeSupabaseMockData();
-      await loadStateFromSupabase();
-      return;
-    }
+    // O auto-populamento silencioso de dados de demonstração no Supabase quando vazio foi removido 
+    // para permitir que o usuário inicie do zero perfeitamente sem que dados fictícios reapareçam.
+    // O usuário pode carregar dados de demonstração a qualquer momento nas configurações.
+
 
     state.cards = dbCards ? dbCards.map(c => ({
       id: c.id,
@@ -930,6 +927,51 @@ function renderDashboard() {
   renderCharts();
 }
 
+// --- Inteligência de Auto-Categorização & Auto-Detecção de Crédito/Débito ---
+
+function suggestCategory(description) {
+  const desc = description.toLowerCase();
+  
+  if (desc.includes('uber') || desc.includes('posto') || desc.includes('combustivel') || desc.includes('combustível') || desc.includes('99app') || desc.includes('99 taxi') || desc.includes('cabify') || desc.includes('taxi') || desc.includes('pedagio') || desc.includes('pedágio')) {
+    return 'cat-transporte';
+  }
+  if (desc.includes('ifood') || desc.includes('mercado') || desc.includes('restaurante') || desc.includes('pizzaria') || desc.includes('padaria') || desc.includes('lanches') || desc.includes('supermercado') || desc.includes('atacadao') || desc.includes('pao de acucar') || desc.includes('pão de açúcar') || desc.includes('carrefour') || desc.includes('mcdonald') || desc.includes('burger king') || desc.includes('alimento') || desc.includes('comida') || desc.includes('cafe') || desc.includes('café') || desc.includes('açougue') || desc.includes('acougue') || desc.includes('angelina') || desc.includes('koch') || desc.includes('giassi') || desc.includes('brasil atacadista') || desc.includes('brasil atacado') || desc.includes('angeloni') || desc.includes('mercearia')) {
+    return 'cat-alimentacao';
+  }
+  if (desc.includes('netflix') || desc.includes('spotify') || desc.includes('cinema') || desc.includes('steam') || desc.includes('playstation') || desc.includes('xbox') || desc.includes('jogo') || desc.includes('lazer') || desc.includes('shopee') || desc.includes('mercadolivre') || desc.includes('mercado livre') || desc.includes('amazon') || desc.includes('aliexpress') || desc.includes('shein') || desc.includes('viagem') || desc.includes('ingresso') || desc.includes('show') || desc.includes('bar') || desc.includes('churrasco') || desc.includes('cerveja')) {
+    return 'cat-lazer';
+  }
+  if (desc.includes('pet') || desc.includes('veterinario') || desc.includes('veterinário') || desc.includes('petz') || desc.includes('cobasi') || desc.includes('kobasi') || desc.includes('pipoca') || desc.includes('ração') || desc.includes('racao') || desc.includes('banho e tosa') || desc.includes('cachorro') || desc.includes('gato')) {
+    return 'cat-pet';
+  }
+  if (desc.includes('farmacia') || desc.includes('farmácia') || desc.includes('saude') || desc.includes('saúde') || desc.includes('medico') || desc.includes('médico') || desc.includes('dentista') || desc.includes('remedio') || desc.includes('remédio') || desc.includes('drogaria') || desc.includes('pague menos') || desc.includes('drogasil') || desc.includes('raia') || desc.includes('clinica') || desc.includes('clínica') || desc.includes('hospital')) {
+    return 'cat-saude';
+  }
+  if (desc.includes('colegio') || desc.includes('colégio') || desc.includes('escola') || desc.includes('curso') || desc.includes('faculdade') || desc.includes('livro') || desc.includes('udemy') || desc.includes('estudo') || desc.includes('mensalidade escolar')) {
+    return 'cat-educacao';
+  }
+  if (desc.includes('aluguel') || desc.includes('condominio') || desc.includes('condomínio') || desc.includes('luz') || desc.includes('agua') || desc.includes('água') || desc.includes('gas') || desc.includes('gás') || desc.includes('internet') || desc.includes('energia') || desc.includes('enel') || desc.includes('sabesp') || desc.includes('celesc') || desc.includes('vivo') || desc.includes('claro')) {
+    return 'cat-moradia';
+  }
+  return 'cat-outros-desp'; // padrão
+}
+
+function suggestPaymentMethod(description) {
+  const desc = description.toLowerCase();
+  if (desc.includes('credito') || desc.includes('crédito') || desc.includes('cartao') || desc.includes('cartão')) {
+    if (state.cards && state.cards.length > 0) {
+      for (const card of state.cards) {
+        const cardName = card.name.toLowerCase();
+        if (desc.includes(cardName)) {
+          return card.id;
+        }
+      }
+      return state.cards[0].id; // Retorna o primeiro cartão por padrão
+    }
+  }
+  return 'cash'; // Débito, pix ou dinheiro por padrão
+}
+
 // Renderizar Transações Pendentes (notificações enviadas pelo MacroDroid)
 function renderPendingTransactions() {
   const pendingPanel = document.getElementById('pending-panel');
@@ -950,6 +992,18 @@ function renderPendingTransactions() {
   pendingList.innerHTML = '';
 
   pending.forEach(t => {
+    // Calcular sugestões
+    const suggestedCatId = suggestCategory(t.description);
+    const suggestedPayId = suggestPaymentMethod(t.description);
+
+    const catObj = getCategoryById(suggestedCatId) || { icon: '🏷️', name: 'Outros (Despesas)' };
+    
+    let payName = '💰 Saldo / Pix';
+    if (suggestedPayId !== 'cash') {
+      const cardObj = state.cards.find(c => c.id === suggestedPayId);
+      payName = cardObj ? `💳 ${cardObj.name}` : '💳 Cartão de Crédito';
+    }
+
     const li = document.createElement('li');
     li.className = 'pending-card';
     li.innerHTML = `
@@ -959,16 +1013,27 @@ function renderPendingTransactions() {
       </div>
       <div class="pending-card-body">
         <span class="pending-card-desc">${t.description}</span>
+        <div class="pending-suggestion-box" style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted); display: flex; gap: 0.75rem; flex-wrap: wrap; background: rgba(255, 255, 255, 0.05); padding: 0.4rem; border-radius: 6px; border: 1px dashed rgba(255,255,255,0.1);">
+          <span>💡 Sugerido: <strong style="color:var(--text-primary);">${catObj.icon} ${catObj.name}</strong></span>
+          <span>⚡ Forma: <strong style="color:var(--text-primary);">${payName}</strong></span>
+        </div>
       </div>
-      <div class="pending-card-actions">
-        <button class="btn-pending-confirm btn" data-id="${t.id}" style="padding: 0.4rem 0.6rem; font-size: 0.8rem; border-radius: 8px;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px; height:14px; margin-right: 2px;">
+      <div class="pending-card-actions" style="margin-top: 0.75rem; display: flex; gap: 0.4rem; flex-wrap: wrap;">
+        <button class="btn-pending-quick-approve btn btn-success" data-id="${t.id}" data-cat="${suggestedCatId}" data-pay="${suggestedPayId}" style="padding: 0.4rem 0.6rem; font-size: 0.8rem; border-radius: 8px; background-color: #10b981; color: white; border: none; font-weight: 500; cursor: pointer; display: inline-flex; align-items: center; gap: 4px; transition: var(--transition-fast);">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:12px; height:12px;">
             <polyline points="20 6 9 17 4 12"></polyline>
           </svg>
-          Confirmar
+          Aprovar Rápido
+        </button>
+        <button class="btn-pending-confirm btn" data-id="${t.id}" style="padding: 0.4rem 0.6rem; font-size: 0.8rem; border-radius: 8px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px; height:12px; margin-right: 2px;">
+            <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+            <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+          </svg>
+          Detalhes
         </button>
         <button class="btn-pending-reject btn" data-id="${t.id}" style="padding: 0.4rem 0.6rem; font-size: 0.8rem; border-radius: 8px;">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px; height:14px; margin-right: 2px;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px; height:12px; margin-right: 2px;">
             <line x1="18" y1="6" x2="6" y2="18"></line>
             <line x1="6" y1="6" x2="18" y2="18"></line>
           </svg>
@@ -980,6 +1045,15 @@ function renderPendingTransactions() {
   });
 
   // Eventos nos botões das transações pendentes
+  document.querySelectorAll('.btn-pending-quick-approve').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const id = btn.getAttribute('data-id');
+      const cat = btn.getAttribute('data-cat');
+      const pay = btn.getAttribute('data-pay');
+      await handleQuickApprovePending(id, cat, pay);
+    });
+  });
+
   document.querySelectorAll('.btn-pending-confirm').forEach(btn => {
     btn.addEventListener('click', () => {
       const id = btn.getAttribute('data-id');
@@ -995,9 +1069,36 @@ function renderPendingTransactions() {
   });
 }
 
+async function handleQuickApprovePending(id, cat, pay) {
+  const trans = state.transactions.find(t => t.id === id);
+  if (!trans) return;
+
+  // Atualizar a transação localmente
+  trans.category = cat;
+  trans.paymentMethod = pay;
+  trans.status = 'confirmed';
+
+  showToast("Confirmando despesa...");
+  
+  saveState();
+  
+  try {
+    await dbUpsertTransaction(trans); // Salvar no banco Supabase
+    showToast("Despesa aprovada com sucesso!");
+    renderDashboard();
+  } catch (err) {
+    console.error("Erro ao aprovar transação rápida:", err);
+    showToast("⚠️ Falha ao salvar no Supabase.", true);
+  }
+}
+
 function handleConfirmPending(id) {
   const trans = state.transactions.find(t => t.id === id);
   if (!trans) return;
+
+  // Sugestões inteligentes de carregamento
+  const suggestedCatId = suggestCategory(trans.description);
+  const suggestedPayId = suggestPaymentMethod(trans.description);
 
   // Preencher a modal de transações
   transForm.reset();
@@ -1009,8 +1110,10 @@ function handleConfirmPending(id) {
   document.getElementById('trans-description').value = trans.description;
   document.getElementById('trans-date').value = trans.date;
   
-  // Abre em despesa por padrão
+  // Preencher categorias e pré-selecionar a sugerida
   populateModalCategories('expense');
+  document.getElementById('trans-category').value = suggestedCatId;
+  
   paymentInstallmentContainer.style.display = 'block';
   transPaymentMethod.innerHTML = '<option value="cash">💰 Saldo da Conta / Dinheiro</option>';
   state.cards.forEach(card => {
@@ -1019,11 +1122,20 @@ function handleConfirmPending(id) {
     opt.textContent = `💳 ${card.name}`;
     transPaymentMethod.appendChild(opt);
   });
-  installmentSelectGroup.style.display = 'none';
+  
+  // Pré-selecionar a forma de pagamento sugerida
+  transPaymentMethod.value = suggestedPayId;
+
+  const isCard = suggestedPayId !== 'cash';
+  if (isCard) {
+    installmentSelectGroup.style.display = 'block';
+  } else {
+    installmentSelectGroup.style.display = 'none';
+  }
   transInstallments.value = '1';
 
   modalTitle.textContent = 'Confirmar Lançamento';
-  document.getElementById('btn-save-transaction').className = 'btn btn-expense'; // estilo de salvar despesa
+  document.getElementById('btn-save-transaction').className = 'btn btn-expense';
   document.getElementById('btn-save-transaction').textContent = 'Confirmar Lançamento';
 
   transactionModal.classList.add('active');
@@ -1038,6 +1150,7 @@ async function handleRejectPending(id) {
     showToast("Transação pendente rejeitada!");
   }
 }
+
 
 function renderRecentTransactions() {
   const listContainer = document.getElementById('recent-transactions-list');
@@ -2292,29 +2405,62 @@ categoryEditForm.addEventListener('submit', (e) => {
   showToast("Categoria editada com sucesso!");
 });
 
-// Reset de dados completo
-document.getElementById('btn-reset-data').addEventListener('click', () => {
-  if (confirm("ATENÇÃO: Isso irá apagar permanentemente todas as suas transações e configurações locais neste navegador. Deseja continuar?")) {
-    localStorage.removeItem('moneyacker_data');
-    localStorage.removeItem('moneyacker_supabase_url');
-    localStorage.removeItem('moneyacker_supabase_key');
-    supabaseUrl = '';
-    supabaseKey = '';
-    supabaseClient = null;
-    
-    const inputUrl = document.getElementById('supabase-url');
-    const inputKey = document.getElementById('supabase-key');
-    if (inputUrl) inputUrl.value = '';
-    if (inputKey) inputKey.value = '';
-    
-    updateConnectionStatus('disconnected', 'Desconectado (Modo Local Offline)');
-    const btnDisconnect = document.getElementById('btn-disconnect-supabase');
-    if (btnDisconnect) btnDisconnect.style.display = 'none';
-    document.getElementById('btn-save-supabase').textContent = 'Conectar Banco';
+// Reset de dados completo inteligente (preserva conexão Supabase)
+document.getElementById('btn-reset-data').addEventListener('click', async () => {
+  const isConnected = supabaseClient !== null;
+  let confirmMessage = "ATENÇÃO: Isso irá apagar permanentemente todas as suas transações e configurações locais neste navegador.\n\nSua URL e Chave do Supabase serão PRESERVADAS para você não ter o trabalho de digitá-las novamente. Deseja continuar?";
+  
+  if (isConnected) {
+    confirmMessage = "⚠️ ATENÇÃO: Você está CONECTADO ao seu banco de dados Supabase!\n\n" +
+                     "Para iniciar do zero de verdade (tanto para você quanto para a Ana), é necessário apagar os dados salvos no banco de dados do Supabase também, senão os dados antigos voltarão automaticamente.\n\n" +
+                     "Deseja apagar permanentemente todas as transações, orçamentos e cartões salvos localmente E no banco de dados do Supabase?";
+  }
 
-    loadState();
-    renderDashboard();
-    showToast("Todos os dados locais foram resetados!", true);
+  if (confirm(confirmMessage)) {
+    try {
+      if (isConnected) {
+        showToast("Limpando registros no banco Supabase...", false);
+        
+        // Deletar transações, orçamentos e cartões do Supabase de forma limpa e síncrona
+        // Usamos um filtro geral seguro (ID diferente de '0') para contornar restrições de delete em massa
+        const { error: errorTrans } = await supabaseClient.from('transactions').delete().neq('id', '0');
+        const { error: errorBudgets } = await supabaseClient.from('budgets').delete().neq('category_id', '0');
+        const { error: errorCards } = await supabaseClient.from('cards').delete().neq('id', '0');
+        
+        if (errorTrans || errorBudgets || errorCards) {
+          console.error("Erro ao limpar dados no Supabase:", { errorTrans, errorBudgets, errorCards });
+          showToast("⚠️ Falha ao limpar algumas tabelas no Supabase. O cache local foi resetado.", true);
+        } else {
+          showToast("Banco de dados do Supabase limpo com sucesso!");
+        }
+      }
+      
+      // Limpar cache de dados locais
+      localStorage.removeItem('moneyacker_data');
+      localStorage.removeItem('moneyacker_data_backup');
+      localStorage.removeItem('moneyacker_data_migrated_backup');
+      
+      // Garantir que os inputs continuem preenchidos com os valores ativos do localStorage ou padrões de fábrica
+      const inputUrl = document.getElementById('supabase-url');
+      const inputKey = document.getElementById('supabase-key');
+      if (inputUrl && !inputUrl.value) inputUrl.value = localStorage.getItem('moneyacker_supabase_url') || DEFAULT_SUPABASE_URL;
+      if (inputKey && !inputKey.value) inputKey.value = localStorage.getItem('moneyacker_supabase_key') || DEFAULT_SUPABASE_KEY;
+
+      // Recarregar o estado padrão local
+      loadState();
+      
+      // Se estiver conectado, recarrega o estado limpo sincronizado do banco
+      if (isConnected) {
+        await loadStateFromSupabase();
+      }
+      
+      renderDashboard();
+      refreshActiveView();
+      showToast("Todos os dados foram resetados para o zero com sucesso!", false);
+    } catch (err) {
+      console.error("Erro no reset de dados:", err);
+      showToast("⚠️ Ocorreu um erro ao resetar os dados.", true);
+    }
   }
 });
 
@@ -2408,5 +2554,14 @@ window.addEventListener('DOMContentLoaded', async () => {
     await initSupabase();
   } else {
     updateConnectionStatus('disconnected', 'Desconectado (Modo Local Offline)');
+  }
+
+  // Registrar Service Worker para habilitar PWA instalável
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js')
+        .then(reg => console.log('Service Worker registrado com sucesso:', reg.scope))
+        .catch(err => console.error('Erro ao registrar Service Worker:', err));
+    });
   }
 });

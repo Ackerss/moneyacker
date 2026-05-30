@@ -42,24 +42,46 @@ Como o repositório privado do GitHub (`Ackerss/moneyacker`) está integrado dir
 ## 👥 Uso Compartilhado: Jacson & Ana
 
 Para que vocês dois compartilhem as mesmas informações e vejam as atualizações em tempo real:
-1. Abra o link do aplicativo [https://moneyacker.vercel.app/](https://moneyacker.vercel.app/) em qualquer dispositivo (seu celular S25, o laptop, o celular da Ana).
+1. Abra o link do aplicativo em qualquer dispositivo (seu celular S25, o laptop, o celular da Ana).
 2. Vá até a aba **Configurações**.
 3. Na seção **Conexão com o Banco de Dados (Supabase)**, cole:
-   * **URL do Projeto Supabase:** `https://xxxxxxxxxxxxxxxxxxxx.supabase.co`
-   * **Chave Anon (Public API Key):** A chave longa disponível nas configurações de API do seu projeto Supabase.
+   * **URL do Projeto Supabase:** A URL do seu banco de dados.
+   * **Chave Anon (Public API Key):** A chave longa Anon.
 4. Clique em **Conectar Banco**.
 5. Repita o processo no celular de Ana utilizando **exatamente as mesmas credenciais (URL e Chave)**.
-6. *Pronto! A partir desse momento, as transações criadas por um serão refletidas na tela do outro instantaneamente.*
+6. *Nota:* As credenciais de vocês já foram configuradas como padrão no código, portanto o aplicativo já se conectará de forma totalmente automática no primeiro acesso de vocês em novos aparelhos!
 
 ---
 
-## 📱 Lançamentos Pendentes (Aguardando Confirmação)
+## 📱 Instalação como Aplicativo no Celular (PWA)
 
-* Quando o MacroDroid capturar uma notificação (por exemplo, uma compra de R$ 35,00 no Nubank), ela será enviada para o banco com a categoria genérica "Outros (Despesas)" e o status `pending`.
-* No Dashboard do MoneyAcker, aparecerá um card no topo chamado **"Aguardando Confirmação"**.
-* Você ou Ana podem:
-  * **Confirmar:** Abre a janela de cadastro pré-preenchida. Vocês escolhem a categoria correta (Ex: Alimentação), selecionam o cartão de crédito e clicam em Salvar. O status vira `confirmed` e ela entra nos gráficos de saldo.
-  * **Rejeitar:** Exclui permanentemente o lançamento pendente (caso seja uma notificação de propaganda do banco ou uma compra duplicada).
+O MoneyAcker agora é um **Progressive Web App (PWA)**! Você e a Ana podem instalá-lo diretamente nos celulares sem precisar baixar de lojas de aplicativos, proporcionando uma experiência de app nativo em tela cheia e de alta performance.
+
+### Como Instalar:
+* **No Android (Google Chrome):** Ao abrir o site, clique no aviso "Instalar aplicativo" na parte inferior ou toque nos três pontinhos no canto superior direito e selecione **"Instalar aplicativo"** (ou **"Adicionar à tela inicial"**).
+* **No iPhone / iOS (Safari):** Abra o site no Safari, toque no ícone de **Compartilhar** (quadrado com uma seta para cima) na barra inferior e selecione **"Adicionar à Tela de Início"**.
+
+### Vantagens do PWA:
+1. **Modo Standalone (Tela Cheia):** Abre sem a barra de endereços do navegador, parecendo um app nativo de verdade.
+2. **Carregamento Instantâneo:** Graças ao *Service Worker* (`sw.js`), os arquivos fundamentais do site ficam em cache local, abrindo de imediato mesmo se você estiver com internet fraca ou sem sinal na rua.
+3. **Ícone Exclusivo:** Cria um atalho premium com o logotipo estilizado do MoneyAcker na grade de aplicativos da sua tela inicial.
+
+---
+
+## ⚡ Aprovando Despesas diretamente do Celular (Aprovação Expressa)
+
+Agora, você e a Ana têm **duas formas** de gerenciar as despesas capturadas pelas notificações no celular:
+
+### Método 1: Aprovação Expressa no Celular (Recomendado)
+Quando o MacroDroid intercepta uma compra, ele acende um pop-up de diálogo no seu telefone perguntando: *"Registrar compra de R$ XX,XX?"*.
+* Se você clicar em **`[ APROVAR ]`**: O MacroDroid envia a despesa ao Supabase já com o status `confirmed` (Confirmado). Ela entra na hora no saldo e nos gráficos do MoneyAcker! **Você não precisa abrir o app para confirmar.**
+* Se clicar em **`[ CANCELAR ]`**: O envio é interrompido e a despesa é descartada na hora.
+
+### Método 2: Confirmação Tardia (Pendente no App)
+Se a macro estiver configurada para enviar como `pending`, as transações vão para uma caixa especial chamada **"Aguardando Confirmação"** no topo do Dashboard.
+Você ou Ana podem entrar no app a qualquer hora e:
+* **Confirmar:** Ajustar a categoria (Alimentação, Lazer), o cartão usado e salvar (muda o status para `confirmed`).
+* **Rejeitar:** Apagar o registro pendente de forma definitiva.
 
 ---
 
@@ -70,9 +92,13 @@ MONEYACKER/
 │
 ├── index.html          # Layout visual, menus, modais e abas
 ├── style.css           # Estilos e visual premium (tema claro clean, efeitos flutuantes, pulse)
-├── app.js              # Lógica financeira, conexão Supabase CDN e Realtime
+├── app.js              # Lógica financeira, conexão Supabase e registro do PWA
+│
+├── manifest.json       # Manifesto de PWA para permitir instalação e definir tema/cores
+├── sw.js               # Service Worker para cache local do aplicativo e funcionamento offline
+├── icon.svg            # Ícone oficial premium em alta definição vetorizada para celular
 │
 ├── supabase_schema.sql # Script para rodar no editor SQL do Supabase
-├── MACRODROID_SETUP.md # Guia visual detalhado para o celular do Jacson
+├── MACRODROID_SETUP.md # Guia visual detalhado para o celular do Jacson e da Ana
 └── README.md           # Este arquivo de documentação e guia de uso
 ```
