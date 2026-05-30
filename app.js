@@ -37,11 +37,16 @@ let state = {
 let categoryChartInstance = null;
 let flowChartInstance = null;
 
-// 4. Inicialização & Persistência de Dados (Local Storage)
 // 4. Inicialização & Persistência de Dados (Supabase + Local Storage Cache)
 let supabaseClient = null;
-let supabaseUrl = localStorage.getItem('moneyacker_supabase_url') || 'https://gqqjxhfqlbflfrpjnojt.supabase.co';
-let supabaseKey = localStorage.getItem('moneyacker_supabase_key') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdxcWp4aGZxbGJmbGZycGpub2p0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwOTE5OTgsImV4cCI6MjA5NTY2Nzk5OH0._QSbapoTPdRP4_Un3M5-hICi3gwoSlJRUpjP4dXhJ0Y';
+const isSupabaseDisabled = localStorage.getItem('moneyacker_supabase_disabled') === 'true';
+let supabaseUrl = '';
+let supabaseKey = '';
+
+if (!isSupabaseDisabled) {
+  supabaseUrl = localStorage.getItem('moneyacker_supabase_url') || 'https://gqqjxhfqlbflfrpjnojt.supabase.co';
+  supabaseKey = localStorage.getItem('moneyacker_supabase_key') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdxcWp4aGZxbGJmbGZycGpub2p0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwOTE5OTgsImV4cCI6MjA5NTY2Nzk5OH0._QSbapoTPdRP4_Un3M5-hICi3gwoSlJRUpjP4dXhJ0Y';
+}
 
 function loadState() {
   const localData = localStorage.getItem('moneyacker_data');
@@ -75,6 +80,7 @@ async function initSupabase() {
   const btnDisconnect = document.getElementById('btn-disconnect-supabase');
   const inputUrl = document.getElementById('supabase-url');
   const inputKey = document.getElementById('supabase-key');
+  const toolsSection = document.getElementById('supabase-tools-section');
 
   if (inputUrl) inputUrl.value = supabaseUrl;
   if (inputKey) inputKey.value = supabaseKey;
@@ -82,6 +88,7 @@ async function initSupabase() {
   if (!supabaseUrl || !supabaseKey) {
     updateConnectionStatus('disconnected', 'Desconectado (Modo Local Offline)');
     if (btnDisconnect) btnDisconnect.style.display = 'none';
+    if (toolsSection) toolsSection.style.display = 'none';
     return;
   }
 
@@ -102,6 +109,24 @@ async function initSupabase() {
     if (btnDisconnect) btnDisconnect.style.display = 'inline-flex';
     if (btnSave) btnSave.textContent = 'Atualizar Conexão';
 
+    // Exibir ferramentas adicionais de dados se conectado
+    if (toolsSection) toolsSection.style.display = 'block';
+
+    // Controlar exibição do botão de migração local se existirem dados locais
+    const btnMigrate = document.getElementById('btn-migrate-local-data');
+    if (btnMigrate) {
+      const localData = localStorage.getItem('moneyacker_data_backup') || localStorage.getItem('moneyacker_data');
+      let hasRealData = false;
+      if (localData) {
+        try {
+          const parsed = JSON.parse(localData);
+          hasRealData = (parsed.transactions && parsed.transactions.length > 0 && parsed.transactions.some(t => !t.id.startsWith('mock-'))) ||
+                        (parsed.cards && parsed.cards.length > 0 && parsed.cards.some(c => !c.id.startsWith('card-')));
+        } catch (e) {}
+      }
+      btnMigrate.style.display = hasRealData ? 'inline-flex' : 'none';
+    }
+
     // Carregar dados iniciais do Supabase
     await loadStateFromSupabase();
     
@@ -114,6 +139,7 @@ async function initSupabase() {
   } catch (err) {
     console.error("Erro de conexão ao Supabase:", err);
     updateConnectionStatus('disconnected', 'Erro de Conexão (Modo Local Offline)');
+    if (toolsSection) toolsSection.style.display = 'none';
     showToast("⚠️ Não foi possível conectar ao Supabase. Rodando no modo local.", true);
   }
 }
@@ -184,6 +210,21 @@ async function loadStateFromSupabase() {
   if (!supabaseClient) return;
   
   try {
+    // Fazer backup de segurança dos dados locais se existirem no localStorage
+    const localData = localStorage.getItem('moneyacker_data');
+    if (localData) {
+      try {
+        const parsed = JSON.parse(localData);
+        const hasRealData = (parsed.transactions && parsed.transactions.length > 0 && parsed.transactions.some(t => !t.id.startsWith('mock-'))) ||
+                            (parsed.cards && parsed.cards.length > 0 && parsed.cards.some(c => !c.id.startsWith('card-')));
+        if (hasRealData && !localStorage.getItem('moneyacker_data_backup') && !localStorage.getItem('moneyacker_data_migrated_backup')) {
+          localStorage.setItem('moneyacker_data_backup', localData);
+          console.log("Backup de segurança dos dados locais criado com sucesso.");
+        }
+      } catch (errBackup) {
+        console.error("Erro ao fazer backup de segurança dos dados locais:", errBackup);
+      }
+    }
     // 1. Categorias
     const { data: dbCategories, error: catError } = await supabaseClient.from('categories').select('*');
     if (catError) throw catError;
@@ -498,6 +539,121 @@ async function dbUpsertBudget(catId, limit) {
   }
 }
 
+
+// Migra os dados locais salvos no localStorage (ativos ou backup de segurança) para o banco do Supabase conectado
+async function migrateLocalDataToSupabase() {
+  if (!supabaseClient) {
+    showToast("⚠️ Supabase não está conectado.", true);
+    return;
+  }
+
+  // Tentar ler primeiro do backup de segurança criado, senão ler do moneyacker_data atual
+  const backupDataStr = localStorage.getItem('moneyacker_data_backup') || localStorage.getItem('moneyacker_data');
+  if (!backupDataStr) {
+    showToast("Nenhum dado local de teste ou configurações antigas foi localizado neste navegador.", true);
+    return;
+  }
+
+  try {
+    const localState = JSON.parse(backupDataStr);
+    showToast("Processando importação de dados locais...");
+
+    let importedTransactionsCount = 0;
+    let importedCardsCount = 0;
+    let importedBudgetsCount = 0;
+    let importedCategoriesCount = 0;
+
+    // 1. Migrar Categorias personalizadas (IDs que não começam com cat-alimentacao, cat-moradia, etc.)
+    const defaultCatIds = new Set([
+      ...DEFAULT_CATEGORIES.expense.map(c => c.id),
+      ...DEFAULT_CATEGORIES.income.map(c => c.id)
+    ]);
+
+    if (localState.categories) {
+      const allLocalCats = [
+        ...(localState.categories.expense || []),
+        ...(localState.categories.income || [])
+      ];
+
+      for (const cat of allLocalCats) {
+        if (!defaultCatIds.has(cat.id)) {
+          const type = (localState.categories.expense || []).some(c => c.id === cat.id) ? 'expense' : 'income';
+          await dbUpsertCategory(cat, type);
+          importedCategoriesCount++;
+        }
+      }
+    }
+
+    // 2. Migrar Cartões
+    if (localState.cards && localState.cards.length > 0) {
+      for (const card of localState.cards) {
+        // Mapear propriedades corretas do estado local antes do salvamento
+        await dbUpsertCard({
+          id: card.id,
+          name: card.name,
+          limit: card.limit,
+          closingDay: card.closingDay,
+          dueDay: card.dueDay,
+          color: card.color
+        });
+        importedCardsCount++;
+      }
+    }
+
+    // 3. Migrar Orçamentos
+    if (localState.budgets) {
+      for (const [catId, limit] of Object.entries(localState.budgets)) {
+        if (limit > 0) {
+          await dbUpsertBudget(catId, limit);
+          importedBudgetsCount++;
+        }
+      }
+    }
+
+    // 4. Migrar Transações (ignorar transações que já começam com mock- para não duplicar mocks padrões)
+    if (localState.transactions && localState.transactions.length > 0) {
+      const realLocalTransactions = localState.transactions.filter(t => !t.id.startsWith('mock-'));
+      for (const trans of realLocalTransactions) {
+        await dbUpsertTransaction(trans);
+        importedTransactionsCount++;
+      }
+    }
+
+    // Recarregar o estado atual a partir do Supabase agora com os novos dados importados
+    await loadStateFromSupabase();
+    refreshActiveView();
+
+    // Renomear a chave no localStorage para marcar como migrado e não processar de novo
+    localStorage.removeItem('moneyacker_data_backup');
+    localStorage.setItem('moneyacker_data_migrated_backup', backupDataStr);
+
+    showToast(`🎉 Migração concluída! Importados: ${importedTransactionsCount} transações, ${importedCardsCount} cartões e ${importedBudgetsCount} orçamentos.`);
+    
+    // Ocultar botão de migração após concluir
+    const btnMigrate = document.getElementById('btn-migrate-local-data');
+    if (btnMigrate) btnMigrate.style.display = 'none';
+
+  } catch (err) {
+    console.error("Erro ao migrar dados locais para o Supabase:", err);
+    showToast("⚠️ Falha ao processar os dados locais para importação.", true);
+  }
+}
+
+// Reinserir dados fictícios de exemplo no banco do Supabase conectado
+async function loadDemoDataIntoSupabase() {
+  if (!supabaseClient) {
+    showToast("⚠️ Supabase não está conectado.", true);
+    return;
+  }
+
+  if (confirm("Deseja popular o banco do Supabase com os dados e transações de exemplo? Isso pode gerar transações de teste no seu painel para demonstração.")) {
+    showToast("Gerando dados de exemplo no Supabase...");
+    await initializeSupabaseMockData();
+    await loadStateFromSupabase();
+    refreshActiveView();
+    showToast("🎉 Dados de exemplo inseridos com sucesso no Supabase!");
+  }
+}
 
 // Cria dados iniciais fictícios bonitos para o usuário ver o sistema funcionando
 function initializeMockData() {
@@ -2179,6 +2335,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         return;
       }
 
+      localStorage.removeItem('moneyacker_supabase_disabled'); // Reativa Supabase
       supabaseUrl = url;
       supabaseKey = key;
       localStorage.setItem('moneyacker_supabase_url', url);
@@ -2193,6 +2350,7 @@ window.addEventListener('DOMContentLoaded', async () => {
       if (confirm("Deseja realmente desconectar do Supabase? Seus dados serão mantidos no banco de dados do Supabase, mas este navegador voltará ao Modo Local Offline.")) {
         localStorage.removeItem('moneyacker_supabase_url');
         localStorage.removeItem('moneyacker_supabase_key');
+        localStorage.setItem('moneyacker_supabase_disabled', 'true'); // Desativa conexão automática
         supabaseUrl = '';
         supabaseKey = '';
         supabaseClient = null;
@@ -2202,6 +2360,10 @@ window.addEventListener('DOMContentLoaded', async () => {
 
         updateConnectionStatus('disconnected', 'Desconectado (Modo Local Offline)');
         btnDisconnectSupabase.style.display = 'none';
+        
+        const toolsSection = document.getElementById('supabase-tools-section');
+        if (toolsSection) toolsSection.style.display = 'none';
+        
         document.getElementById('btn-save-supabase').textContent = 'Conectar Banco';
 
         loadState();
@@ -2211,10 +2373,30 @@ window.addEventListener('DOMContentLoaded', async () => {
     });
   }
 
+  // Listeners para os botões de ferramentas adicionais do Supabase
+  const btnMigrateLocalData = document.getElementById('btn-migrate-local-data');
+  const btnLoadDemoData = document.getElementById('btn-load-demo-data');
+
+  if (btnMigrateLocalData) {
+    btnMigrateLocalData.addEventListener('click', async () => {
+      await migrateLocalDataToSupabase();
+    });
+  }
+
+  if (btnLoadDemoData) {
+    btnLoadDemoData.addEventListener('click', async () => {
+      await loadDemoDataIntoSupabase();
+    });
+  }
+
   // Inicialização das máscaras monetárias
   setupMoneyMask(document.getElementById('trans-amount'));
   setupMoneyMask(document.getElementById('budget-limit'));
   
-  // Tentar conectar ao Supabase (se credenciais estiverem salvas)
-  await initSupabase();
+  // Tentar conectar ao Supabase (se credenciais estiverem salvas e conexão ativa)
+  if (!isSupabaseDisabled) {
+    await initSupabase();
+  } else {
+    updateConnectionStatus('disconnected', 'Desconectado (Modo Local Offline)');
+  }
 });
