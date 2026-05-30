@@ -1632,7 +1632,9 @@ body {
 }
 
 .supabase-form-row input[type="url"],
-.supabase-form-row input[type="password"] {
+.supabase-form-row input[type="password"],
+.gemini-config-form input[type="password"],
+.gemini-config-form select {
   width: 100%;
   padding: 0.8rem 1rem;
   border: 1px solid var(--border-color);
@@ -1644,7 +1646,9 @@ body {
   transition: all var(--transition-fast);
 }
 
-.supabase-form-row input:focus {
+.supabase-form-row input:focus,
+.gemini-config-form input:focus,
+.gemini-config-form select:focus {
   border-color: var(--primary);
   background-color: #ffffff;
   box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);

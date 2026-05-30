@@ -12,9 +12,7 @@
   
   <!-- Biblioteca de Gráficos Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  
-  <!-- Biblioteca de OCR Tesseract.js -->
-  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+
   
   <!-- Biblioteca do Supabase JS -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -362,6 +360,40 @@
 
           <hr class="settings-divider">
 
+          <!-- Seção Gemini Vision API -->
+          <div class="settings-section">
+            <h3>🤖 Scanner Inteligente (Gemini IA)</h3>
+            <p class="section-desc">Configure sua chave da API do Google Gemini para habilitar o scanner inteligente de cupons fiscais. O Gemini analisa fotos de cupons e extrai automaticamente valor, descrição, data e categoria.</p>
+
+            <div class="gemini-config-form" style="margin-top: 1rem;">
+              <div class="supabase-form-row">
+                <div class="form-group flex-grow">
+                  <label for="gemini-api-key">Chave da API Gemini</label>
+                  <input type="password" id="gemini-api-key" placeholder="Cole sua chave da API do Gemini aqui...">
+                </div>
+                <div class="form-group" style="min-width: 200px;">
+                  <label for="gemini-model-select">Modelo</label>
+                  <select id="gemini-model-select">
+                    <option value="gemini-2.5-flash-lite">Flash-Lite (Recomendado)</option>
+                    <option value="gemini-2.5-flash">Flash (Mais robusto)</option>
+                  </select>
+                </div>
+              </div>
+              <div class="supabase-status-row">
+                <div class="connection-status disconnected" id="gemini-status">
+                  <span class="status-dot"></span>
+                  <span class="status-text" id="gemini-status-text">Não configurado</span>
+                </div>
+                <div class="supabase-buttons">
+                  <button type="button" class="btn btn-primary" id="btn-save-gemini">Salvar Chave</button>
+                  <button type="button" class="btn btn-secondary" id="btn-test-gemini" style="display: none;">Testar Conexão</button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <hr class="settings-divider">
+
           <div class="settings-section">
             <h3>Gerenciamento de Categorias</h3>
             <p class="section-desc">Personalize as categorias disponíveis para suas receitas e despesas.</p>
@@ -475,7 +507,7 @@
         <!-- Status de Processamento do Scanner -->
         <div class="ocr-loader" id="ocr-loader" style="display: none;">
           <div class="ocr-spinner"></div>
-          <span>Lendo cupom fiscal... <strong id="ocr-progress">0%</strong></span>
+          <span>Analisando cupom com IA... <strong id="ocr-progress">✨</strong></span>
         </div>
         
         <div class="form-group">

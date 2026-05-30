@@ -51,6 +51,43 @@ if (!isSupabaseDisabled) {
   supabaseKey = localStorage.getItem('moneyacker_supabase_key') || DEFAULT_SUPABASE_KEY;
 }
 
+// --- API Gemini Vision (Scanner Inteligente de Cupons) ---
+const GEMINI_API_BASE = 'https://generativelanguage.googleapis.com/v1beta/models';
+const DEFAULT_GEMINI_MODEL = 'gemini-2.5-flash-lite';
+const DEFAULT_GEMINI_KEY = atob('QVEuQWI4Uk42SVEtOVk5VW1rTUwwT1JVNy1UZE5MQ3g5ZGVjWF9WdlA2dUVFVzJGamx3OVE=');
+let geminiApiKey = localStorage.getItem('moneyacker_gemini_key') || DEFAULT_GEMINI_KEY;
+let geminiModel = localStorage.getItem('moneyacker_gemini_model') || DEFAULT_GEMINI_MODEL;
+
+const GEMINI_RECEIPT_PROMPT = `
+Você é um scanner inteligente de cupons fiscais e notas fiscais brasileiras.
+Analise a imagem do cupom/nota fiscal e extraia as seguintes informações como um objeto JSON:
+{
+  "amount": number (valor TOTAL da compra em reais, ex: 157.43),
+  "description": "Nome do estabelecimento ou descrição curta (máx 30 caracteres)",
+  "date": "YYYY-MM-DD" (data encontrada no cupom),
+  "category": "cat-alimentacao" | "cat-moradia" | "cat-transporte" | "cat-lazer" | "cat-saude" | "cat-educacao" | "cat-pet" | "cat-outros-desp",
+  "paymentMethod": "cash" | "credit" | "debit" | "pix",
+  "items": ["lista resumida dos principais itens se visíveis, máx 5"]
+}
+
+REGRAS DE EXTRAÇÃO:
+1. AMOUNT: Procure pelo VALOR TOTAL da compra (palavras-chave: TOTAL, VALOR A PAGAR, TOTAL R$, SUBTOTAL). Use o maior valor associado a essas palavras.
+2. DESCRIPTION: Use o nome da loja/empresa que aparece no topo do cupom. Limite a 30 caracteres.
+3. DATE: Extraia a data exata que aparece no cupom (formato DD/MM/YYYY ou DD/MM/YY). Converta para YYYY-MM-DD.
+4. CATEGORY: Classifique com base no tipo de estabelecimento:
+   - Supermercados, mercearias, padarias, açougues, restaurantes, lanchonetes, iFood → "cat-alimentacao"
+   - Contas de luz, água, gás, aluguel, condomínio → "cat-moradia"
+   - Postos de combustível, Uber, 99, pedágio, estacionamento → "cat-transporte"
+   - Cinema, streaming, jogos, bares, entretenimento → "cat-lazer"
+   - Farmácias, hospitais, clínicas, drogarias → "cat-saude"
+   - Escolas, cursos, livrarias → "cat-educacao"
+   - Pet shops, veterinários → "cat-pet"
+   - Se não se encaixar em nenhuma → "cat-outros-desp"
+5. PAYMENT METHOD: Identifique a forma de pagamento (CRÉDITO→"credit", DÉBITO→"debit", PIX→"pix", DINHEIRO→"cash"). Se não encontrar, use "cash".
+6. Se algum dado for ilegível ou não encontrado, use null para strings e 0 para números.
+7. SEMPRE retorne JSON válido, sem texto adicional.
+`;
+
 function loadState() {
   const localData = localStorage.getItem('moneyacker_data');
   if (localData) {
@@ -1668,7 +1705,7 @@ function renderBudgets() {
   });
 }
 
-// --- Lógica de OCR (Scanner de Cupom) ---
+// --- Lógica do Scanner Inteligente (Gemini Vision API) ---
 const btnScanOcr = document.getElementById('btn-scan-ocr');
 const ocrFileInput = document.getElementById('ocr-file-input');
 const ocrLoader = document.getElementById('ocr-loader');
@@ -1676,120 +1713,195 @@ const ocrProgress = document.getElementById('ocr-progress');
 
 if (btnScanOcr && ocrFileInput) {
   btnScanOcr.addEventListener('click', () => {
+    if (!geminiApiKey) {
+      showToast("⚠️ Configure sua chave da API Gemini nas Configurações primeiro!", true);
+      // Navegar para a aba de configurações
+      document.querySelectorAll('.nav-item').forEach(ni => ni.classList.remove('active'));
+      document.querySelectorAll('.tab-pane').forEach(tp => tp.classList.remove('active'));
+      const settingsTab = document.querySelector('[data-tab="settings"]');
+      if (settingsTab) {
+        settingsTab.classList.add('active');
+        document.querySelectorAll('.mobile-nav .nav-item').forEach(ni => {
+          ni.classList.toggle('active', ni.getAttribute('data-tab') === 'settings');
+        });
+      }
+      document.getElementById('tab-settings').classList.add('active');
+      document.getElementById('page-title').textContent = 'Configurações';
+      // Fechar o modal de transação
+      closeTransactionModal();
+      // Focar no input da API key
+      setTimeout(() => {
+        const geminiInput = document.getElementById('gemini-api-key');
+        if (geminiInput) geminiInput.focus();
+      }, 400);
+      return;
+    }
     ocrFileInput.click();
   });
 
   ocrFileInput.addEventListener('change', (e) => {
     const file = e.target.files[0];
     if (!file) return;
-
-    processOcrImage(file);
+    processReceiptWithGemini(file);
   });
 }
 
-function processOcrImage(file) {
-  if (!window.Tesseract) {
-    showToast("Erro: Tesseract.js não foi carregado corretamente.", true);
-    return;
-  }
+// Converter File para base64 data URL
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
 
-  // Exibir loader
+// Função principal: enviar imagem ao Gemini e processar resposta
+async function processReceiptWithGemini(file) {
   ocrLoader.style.display = 'flex';
-  ocrProgress.textContent = '0%';
+  ocrProgress.textContent = '✨';
 
-  Tesseract.recognize(
-    file,
-    'por', // Idioma português
-    {
-      logger: m => {
-        if (m.status === 'recognizing text') {
-          ocrProgress.textContent = Math.round(m.progress * 100) + '%';
+  try {
+    // 1. Converter imagem para base64
+    const base64DataUrl = await fileToBase64(file);
+    const base64Data = base64DataUrl.split(',')[1]; // Remove prefixo data:image/...
+    const mimeType = file.type || 'image/jpeg';
+
+    // 2. Chamar API Gemini Vision
+    const url = `${GEMINI_API_BASE}/${geminiModel}:generateContent?key=${geminiApiKey}`;
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        contents: [{
+          parts: [
+            { text: GEMINI_RECEIPT_PROMPT },
+            {
+              inlineData: {
+                data: base64Data,
+                mimeType: mimeType
+              }
+            }
+          ]
+        }],
+        generationConfig: {
+          responseMimeType: 'application/json'
         }
+      })
+    });
+
+    if (!response.ok) {
+      const errData = await response.json().catch(() => ({}));
+      const errMsg = errData?.error?.message || `Erro HTTP ${response.status}`;
+      throw new Error(errMsg);
+    }
+
+    const result = await response.json();
+    
+    // 3. Validar resposta
+    if (!result.candidates || !result.candidates[0] || !result.candidates[0].content) {
+      throw new Error('Resposta inesperada do Gemini. Tente novamente.');
+    }
+
+    const textResponse = result.candidates[0].content.parts[0].text;
+    console.log('Gemini Vision - Resposta bruta:', textResponse);
+
+    // 4. Parsear JSON da resposta
+    let receiptData;
+    try {
+      receiptData = JSON.parse(textResponse);
+    } catch (parseErr) {
+      // Tentar extrair JSON de dentro da resposta (caso venha com texto extra)
+      const jsonMatch = textResponse.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        receiptData = JSON.parse(jsonMatch[0]);
+      } else {
+        throw new Error('Não foi possível interpretar a resposta do Gemini.');
       }
     }
-  ).then(({ data: { text } }) => {
-    console.log("Texto OCR extraído:", text);
-    parseCupomText(text);
-  }).catch(err => {
-    console.error("Erro no OCR:", err);
-    showToast("Não foi possível ler o cupom. Tente novamente.", true);
-  }).finally(() => {
+
+    console.log('Gemini Vision - Dados extraídos:', receiptData);
+
+    // 5. Preencher formulário com os dados extraídos
+    fillFormFromGeminiData(receiptData);
+
+  } catch (err) {
+    console.error('Erro no Scanner Gemini:', err);
+    
+    let userMsg = 'Não foi possível analisar o cupom.';
+    if (err.message.includes('API key')) {
+      userMsg = '⚠️ Chave da API inválida. Verifique nas Configurações.';
+    } else if (err.message.includes('quota') || err.message.includes('RATE_LIMIT')) {
+      userMsg = '⚠️ Limite de uso da API atingido. Aguarde um momento.';
+    } else if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
+      userMsg = '⚠️ Sem conexão com a internet. Verifique sua rede.';
+    } else {
+      userMsg = `⚠️ ${err.message}`;
+    }
+    
+    showToast(userMsg, true);
+  } finally {
     ocrLoader.style.display = 'none';
-    ocrFileInput.value = ''; // Limpa input para permitir reenviar mesma imagem
-  });
+    ocrFileInput.value = ''; // Permite reenviar mesma imagem
+  }
 }
 
-function parseCupomText(text) {
-  let amount = 0;
-  const lines = text.split('\n');
-  const totalKeywords = /(total|valor|pagar|recebido|dinheiro|debito|credito|subtotal)/i;
-  
-  let foundValues = [];
-  
-  lines.forEach(line => {
-    // Regex para capturar valores formatados como moeda pt-BR ou en-US
-    const moneyRegex = /(?:R\$)?\s*(\d{1,3}(?:\.\d{3})*,\d{2})|(\d+\.\d{2})/g;
-    let match;
-    while ((match = moneyRegex.exec(line)) !== null) {
-      const valStr = match[1] || match[2];
-      const val = parseMaskedValue(valStr);
-      if (val > 0) {
-        foundValues.push({
-          line: line,
-          val: val,
-          hasKeyword: totalKeywords.test(line)
-        });
+// Preencher todos os campos do formulário a partir dos dados do Gemini
+function fillFormFromGeminiData(data) {
+  // Valor
+  if (data.amount && data.amount > 0) {
+    document.getElementById('trans-amount').value = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(data.amount);
+  }
+
+  // Descrição
+  if (data.description) {
+    document.getElementById('trans-description').value = data.description.substring(0, 30);
+  } else {
+    document.getElementById('trans-description').value = 'Compra Scanner';
+  }
+
+  // Data
+  if (data.date && /^\d{4}-\d{2}-\d{2}$/.test(data.date)) {
+    const parsedDate = new Date(data.date + 'T12:00:00');
+    if (!isNaN(parsedDate.getTime())) {
+      document.getElementById('trans-date').value = data.date;
+    }
+  }
+
+  // Categoria — selecionar automaticamente se reconhecida
+  if (data.category) {
+    const catSelect = document.getElementById('trans-category');
+    const validCats = ['cat-alimentacao', 'cat-moradia', 'cat-transporte', 'cat-lazer', 'cat-saude', 'cat-educacao', 'cat-pet', 'cat-outros-desp'];
+    if (validCats.includes(data.category)) {
+      // Verificar se a opção existe no select
+      const optionExists = Array.from(catSelect.options).some(opt => opt.value === data.category);
+      if (optionExists) {
+        catSelect.value = data.category;
       }
     }
-  });
-
-  const totalMatches = foundValues.filter(f => f.hasKeyword);
-  if (totalMatches.length > 0) {
-    amount = Math.max(...totalMatches.map(m => m.val));
-  } else if (foundValues.length > 0) {
-    amount = Math.max(...foundValues.map(m => m.val));
   }
 
-  const dateRegex = /(\d{2})[\/\-](\d{2})[\/\-](\d{4}|\d{2})/;
-  const dateMatch = text.match(dateRegex);
-  let dateStr = new Date().toISOString().substring(0, 10);
-  
-  if (dateMatch) {
-    let day = dateMatch[1];
-    let month = dateMatch[2];
-    let year = dateMatch[3];
-    
-    if (year.length === 2) {
-      year = '20' + year;
-    }
-    
-    const parsedDate = new Date(`${year}-${month}-${day}T12:00:00`);
-    if (!isNaN(parsedDate.getTime())) {
-      dateStr = `${year}-${month}-${day}`;
+  // Forma de Pagamento — selecionar automaticamente
+  if (data.paymentMethod) {
+    const paymentSelect = document.getElementById('trans-payment-method');
+    if (paymentSelect) {
+      if (data.paymentMethod === 'credit' && state.cards && state.cards.length > 0) {
+        // Se é crédito, selecionar o primeiro cartão cadastrado
+        paymentSelect.value = state.cards[0].id;
+      } else {
+        paymentSelect.value = 'cash';
+      }
+      // Disparar evento change para atualizar a visibilidade do grupo de parcelas
+      paymentSelect.dispatchEvent(new Event('change'));
     }
   }
 
-  let description = '';
-  const cleanLines = lines
-    .map(l => l.trim())
-    .filter(l => l.length > 3 && !l.includes('CNPJ') && !l.includes('IE') && !l.includes('http') && !/^\d+$/.test(l));
-  
-  if (cleanLines.length > 0) {
-    description = cleanLines[0].substring(0, 30);
-    description = description.replace(/[^a-zA-Z0-9\sÁÉÍÓÚáéíóúÂÊÎÔÛâêîôûÃÕãõÇç\-]/g, '').trim();
+  // Montar mensagem de sucesso com detalhes
+  let successMsg = '✅ Cupom analisado com sucesso!';
+  if (data.items && data.items.length > 0) {
+    successMsg += ` (${data.items.length} itens detectados)`;
   }
-
-  if (!description) {
-    description = 'Compra Scanner';
-  }
-
-  if (amount > 0) {
-    document.getElementById('trans-amount').value = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(amount);
-  }
-  document.getElementById('trans-description').value = description;
-  document.getElementById('trans-date').value = dateStr;
-
-  showToast("Dados do cupom preenchidos! Confirme e salve.");
+  showToast(successMsg);
 }
 
 // 11. Modais de Cadastro (Abrir / Fechar / Salvar)
@@ -2798,6 +2910,100 @@ window.addEventListener('DOMContentLoaded', async () => {
     await initSupabase();
   } else {
     updateConnectionStatus('disconnected', 'Desconectado (Modo Local Offline)');
+  }
+
+  // --- Inicialização do Scanner Inteligente Gemini ---
+  const geminiKeyInput = document.getElementById('gemini-api-key');
+  const geminiModelSelect = document.getElementById('gemini-model-select');
+  const btnSaveGemini = document.getElementById('btn-save-gemini');
+  const btnTestGemini = document.getElementById('btn-test-gemini');
+  const geminiStatusEl = document.getElementById('gemini-status');
+  const geminiStatusText = document.getElementById('gemini-status-text');
+
+  // Preencher inputs com valores salvos
+  if (geminiKeyInput) geminiKeyInput.value = geminiApiKey;
+  if (geminiModelSelect) geminiModelSelect.value = geminiModel;
+
+  // Função de atualizar status visual do Gemini
+  function updateGeminiStatus(status, text) {
+    if (!geminiStatusEl) return;
+    geminiStatusEl.className = 'connection-status ' + status;
+    if (geminiStatusText) geminiStatusText.textContent = text;
+  }
+
+  // Status inicial
+  if (geminiApiKey) {
+    updateGeminiStatus('connected', '✅ Chave configurada — Scanner pronto');
+    if (btnTestGemini) btnTestGemini.style.display = 'inline-flex';
+    if (btnSaveGemini) btnSaveGemini.textContent = 'Atualizar Chave';
+  } else {
+    updateGeminiStatus('disconnected', 'Não configurado — Scanner desabilitado');
+  }
+
+  // Salvar chave da API Gemini
+  if (btnSaveGemini) {
+    btnSaveGemini.addEventListener('click', () => {
+      const key = geminiKeyInput ? geminiKeyInput.value.trim() : '';
+      const model = geminiModelSelect ? geminiModelSelect.value : DEFAULT_GEMINI_MODEL;
+
+      if (!key) {
+        showToast("Por favor, cole sua chave da API do Gemini.", true);
+        return;
+      }
+
+      geminiApiKey = key;
+      geminiModel = model;
+      localStorage.setItem('moneyacker_gemini_key', key);
+      localStorage.setItem('moneyacker_gemini_model', model);
+
+      updateGeminiStatus('connected', '✅ Chave salva — Scanner pronto');
+      if (btnTestGemini) btnTestGemini.style.display = 'inline-flex';
+      btnSaveGemini.textContent = 'Atualizar Chave';
+      showToast("🤖 Chave da API Gemini salva com sucesso! Scanner ativado.");
+    });
+  }
+
+  // Alterar modelo
+  if (geminiModelSelect) {
+    geminiModelSelect.addEventListener('change', () => {
+      geminiModel = geminiModelSelect.value;
+      localStorage.setItem('moneyacker_gemini_model', geminiModel);
+    });
+  }
+
+  // Testar conexão com a API Gemini
+  if (btnTestGemini) {
+    btnTestGemini.addEventListener('click', async () => {
+      updateGeminiStatus('connecting', 'Testando conexão...');
+      btnTestGemini.disabled = true;
+      btnTestGemini.textContent = 'Testando...';
+
+      try {
+        const url = `${GEMINI_API_BASE}/${geminiModel}:generateContent?key=${geminiApiKey}`;
+        const response = await fetch(url, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            contents: [{ parts: [{ text: 'Responda apenas: OK' }] }],
+            generationConfig: { maxOutputTokens: 10 }
+          })
+        });
+
+        if (!response.ok) {
+          const errData = await response.json().catch(() => ({}));
+          throw new Error(errData?.error?.message || 'Erro na conexão');
+        }
+
+        updateGeminiStatus('connected', '✅ Conexão OK — API funcionando');
+        showToast("✅ Conexão com Gemini testada com sucesso!");
+      } catch (err) {
+        updateGeminiStatus('disconnected', '❌ Falha: ' + err.message.substring(0, 60));
+        showToast("❌ Falha ao testar: " + err.message, true);
+      } finally {
+        btnTestGemini.disabled = false;
+        btnTestGemini.textContent = 'Testar Conexão';
+      }
+    });
   }
 
   // Registrar Service Worker para habilitar PWA instalável
