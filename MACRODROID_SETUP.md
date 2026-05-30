@@ -109,7 +109,14 @@ Se você preferir aprovar a despesa na mesma hora em que a notificação de comp
 2. Toque no **(+)** verde e crie uma nova variável com os dados:
    * **Nome:** `opcao_selecionada` | **Tipo:** Texto (String).
 
-### Passo B: Adicionar a Ação de Pop-up (Diálogo)
+### Passo B: Definir o Valor Padrão para "PENDENTE" (Prevenção de Perda)
+Para garantir que a despesa **não seja perdida** caso o pop-up suma da tela ou você bloqueie o celular sem querer, vamos dar um valor padrão à variável antes de abrir o pop-up:
+1. No bloco de **Ações (Azul)**, toque no **(+)**.
+2. Vá em: **MacroDroid específico** (MacroDroid Specific) ➔ **Definir variável** (Set Variable).
+3. Escolha a variável: `opcao_selecionada`.
+4. Selecione a opção **Valor** (Value) e digite exatamente: `PENDENTE`
+
+### Passo C: Adicionar a Ação de Pop-up (Diálogo com Timeout)
 1. No bloco de **Ações (Azul)**, toque no **(+)**.
 2. Toque na **lupa de pesquisa** no topo e digite: `diálogo` (ou `dialogo`).
 3. Sob a categoria **"Interação com a UI"**, selecione a ação: **"Diálogo de Seleção"** (ou *Diálogo de confirmação*).
@@ -121,30 +128,36 @@ Se você preferir aprovar a despesa na mesma hora em que a notificação de comp
    * **Opções do diálogo:** Deixe como **`Definir manualmente`**.
    * Toque no botão azul **`[ ADICIONAR ITEM ]`** e escreva: `APROVAR`
    * Toque novamente no **`[ ADICIONAR ITEM ]`** e escreva: `CANCELAR`
+   * **Definir tempo limite (Timeout):** Habilite o tempo limite (se disponível na tela de diálogo do MacroDroid) e defina como **`30 segundos`** (para que o pop-up feche sozinho caso você não toque).
    * Toque em **`OK`** no canto inferior direito para salvar a ação.
 
-### Passo C: Ajustar a Ordem das Ações
+### Passo D: Ajustar a Ordem das Ações
 1. Toque no ícone de duas setas verticais **`⇅`** (topo direito do bloco de Ações azul).
-2. Segure e arraste a ação **"Caixa de diálogo de seleção"** para cima, deixando-a posicionada **antes** da ação de **"Requisição HTTP (POST)"** (ela deve ser a penúltima, e o HTTP POST a última).
+2. Ordene as ações de forma que a **Definição da variável como PENDENTE (Passo B)** fique antes do **Diálogo de Seleção (Passo C)**, e ambos fiquem antes da **Requisição HTTP (POST)**. A Requisição HTTP deve ser sempre a última ação.
 3. Toque novamente em **`⇅`** para salvar a ordem.
 
-### Passo D: Fazer o Envio Depender do "APROVAR"
-1. Dê um toque rápido na ação de **"Requisição HTTP (POST)"** e escolha **"Adicionar restrição"**.
-2. Na lupa de pesquisa de restrições, digite: `variável` (ou `variavel`).
-3. Selecione **"Valor da variável"** (sob a categoria *MacroDroid específico*).
-4. Escolha a variável local: **`opcao_selecionada`**.
-5. Configure como: **Igual a** (Equal to) ➔ digite no valor exatamente: **`APROVAR`** (em maiúsculas).
-6. Salve a restrição clicando em **OK**.
+### Passo E: Configurar a Ação de Envio (HTTP POST) e Restrição
+Queremos enviar a despesa sempre, **exceto** se você ativamente clicar em CANCELAR. Se você clicar em APROVAR, a despesa entra na hora. Se der timeout ou você fechar sem querer, ela entra como "pendente" (aguardando confirmação no topo do app) para você não perdê-la.
 
-### Passo E: Configuração das Chaves de IA no Servidor (Supabase)
-Como a Edge Function usa o Gemini para classificar e processar a transação automaticamente, você deve configurar sua chave da API do Gemini nas configurações do seu projeto Supabase:
-1. Acesse o painel do seu projeto no **Supabase** (https://supabase.com).
-2. Vá em **Project Settings** (ícone de engrenagem) ➔ **Edge Functions**.
-3. Em **Secrets**, clique em **Add new secret**.
-4. Adicione o seguinte par:
-   * **Name:** `GEMINI_API_KEY`
-   * **Value:** *(Cole sua chave da API do Gemini aqui)*
-5. Clique em **Save** para ativar o processamento por inteligência artificial no servidor.
+1. Dê dois toques na ação **"Requisição HTTP (POST)"** para abrir as configurações.
+2. Altere o JSON enviado no **Corpo do POST** para incluir o status dinâmico:
+   ```json
+   {
+     "notification_title": "{not_title}",
+     "notification_text": "{notification}",
+     "amount": {lv=valor_final},
+     "date": "{lv=data_compra}",
+     "status": "{lv=opcao_selecionada}"
+   }
+   ```
+   *(Dessa forma, se a opção for APROVAR, ela será cadastrada no banco como confirmed. Se expirar ou fechar, a variável continua PENDENTE e ela entra como pending).*
+3. Toque em **OK** para salvar a alteração da Requisição HTTP.
+4. Dê um toque rápido na ação de **"Requisição HTTP (POST)"** e escolha **"Adicionar restrição"**. (Se já existir a restrição antiga `opcao_selecionada = APROVAR`, exclua ela).
+5. Na lupa de pesquisa de restrições, digite: `variável` (ou `variavel`).
+6. Selecione **"Valor da variável"** (sob a categoria *MacroDroid específico*).
+7. Escolha a variável local: **`opcao_selecionada`**.
+8. Configure como: **Diferente de** (Not Equal to) ➔ digite no valor exatamente: **`CANCELAR`** (em maiúsculas).
+9. Salve a restrição clicando em **OK**.
 
 ---
 
