@@ -1600,7 +1600,99 @@ body {
   
   .main-content {
     margin-left: 0;
-    padding: 1.5rem 1.5rem 80px 1.5rem; /* Padding extra na parte inferior para a barra de navegação */
+    padding: 1rem 1rem 120px 1rem; /* Padding extra na parte inferior para a barra de navegação e safe areas */
+  }
+  
+  /* Otimizações de Espaçamento e Layout Mobile */
+  .summary-cards {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.75rem !important;
+    margin-bottom: 1.25rem !important;
+  }
+  
+  .summary-card {
+    padding: 1rem !important;
+    border-radius: var(--radius-md) !important;
+  }
+  
+  .summary-card:last-child {
+    grid-column: span 2 !important;
+  }
+  
+  .card-header {
+    margin-bottom: 0.5rem !important;
+  }
+  
+  .card-icon-container {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 10px !important;
+  }
+  
+  .card-icon {
+    width: 16px !important;
+    height: 16px !important;
+  }
+  
+  .card-label {
+    font-size: 0.75rem !important;
+  }
+  
+  .card-amount {
+    font-size: 1.35rem !important;
+  }
+
+  .panel {
+    padding: 1rem !important;
+    gap: 1rem !important;
+  }
+  
+  .panel-header {
+    padding-bottom: 0.75rem !important;
+  }
+  
+  .dashboard-grid {
+    gap: 1.25rem !important;
+  }
+
+  /* Otimização dos Formulários de Conexão no Mobile */
+  .supabase-form-row {
+    flex-direction: column !important;
+    gap: 0.75rem !important;
+    margin-bottom: 0.75rem !important;
+  }
+  
+  .supabase-form-row .form-group {
+    flex: 1 1 auto !important;
+    width: 100% !important;
+  }
+  
+  .supabase-status-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 0.75rem !important;
+    padding: 0.75rem 1rem !important;
+  }
+  
+  .supabase-buttons {
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 0.5rem !important;
+  }
+  
+  .supabase-buttons button {
+    width: 100% !important;
+  }
+
+  /* Otimização das Categorias no Mobile */
+  .categories-list {
+    grid-template-columns: repeat(2, 1fr) !important;
+    gap: 0.5rem !important;
+  }
+  
+  .category-config-item {
+    padding: 0.5rem 0.75rem !important;
+    font-size: 0.85rem !important;
   }
   
   /* Barra de Navegação Móvel */
@@ -1883,7 +1975,7 @@ body {
     }
     
     .main-content {
-      padding: 1rem 1rem 80px 1rem;
+      padding: 1rem 1rem 120px 1rem;
     }
   }
 }
