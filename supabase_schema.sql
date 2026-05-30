@@ -21,6 +21,8 @@ create table if not exists cards (
   closing_day integer not null,
   due_day integer not null,
   color text not null,
+  last_four_digits text,
+  owner text default 'Jacson',
   created_at timestamp with time zone default timezone('utc'::text, now()) not null
 );
 

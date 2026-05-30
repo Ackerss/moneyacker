@@ -312,7 +312,9 @@ async function loadStateFromSupabase() {
       limit: parseFloat(c.limit_amount),
       closingDay: c.closing_day,
       dueDay: c.due_day,
-      color: c.color
+      color: c.color,
+      lastFourDigits: c.last_four_digits || '',
+      owner: c.owner || 'Jacson'
     })) : [];
     
     state.budgets = {};
@@ -429,7 +431,9 @@ function handleRealtimeEvent(table, payload) {
         limit: parseFloat(newRow.limit_amount),
         closingDay: newRow.closing_day,
         dueDay: newRow.due_day,
-        color: newRow.color
+        color: newRow.color,
+        lastFourDigits: newRow.last_four_digits || '',
+        owner: newRow.owner || 'Jacson'
       };
       const idx = state.cards.findIndex(c => c.id === mapped.id);
       if (idx !== -1) {
@@ -540,7 +544,9 @@ async function dbUpsertCard(card) {
       limit_amount: card.limit,
       closing_day: card.closingDay,
       due_day: card.dueDay,
-      color: card.color
+      color: card.color,
+      last_four_digits: card.lastFourDigits || null,
+      owner: card.owner || 'Jacson'
     });
     if (error) throw error;
   } catch (e) {
@@ -631,7 +637,9 @@ async function migrateLocalDataToSupabase() {
           limit: card.limit,
           closingDay: card.closingDay,
           dueDay: card.dueDay,
-          color: card.color
+          color: card.color,
+          lastFourDigits: card.lastFourDigits || '',
+          owner: card.owner || 'Jacson'
         });
         importedCardsCount++;
       }
@@ -706,8 +714,8 @@ function initializeMockData() {
   };
   
   state.cards = [
-    { id: 'card-1', name: 'Nubank Roxinho', limit: 3000.00, closingDay: 28, dueDay: 5, color: '#8a05be' },
-    { id: 'card-2', name: 'Visa Platinum', limit: 8000.00, closingDay: 10, dueDay: 17, color: '#0f172a' }
+    { id: 'card-1', name: 'Nubank Roxinho', limit: 3000.00, closingDay: 28, dueDay: 5, color: '#8a05be', lastFourDigits: '', owner: 'Jacson' },
+    { id: 'card-2', name: 'Visa Platinum', limit: 8000.00, closingDay: 10, dueDay: 17, color: '#0f172a', lastFourDigits: '', owner: 'Jacson' }
   ];
   
   state.transactions = [
@@ -971,13 +979,100 @@ function renderDashboard() {
 
 // --- Inteligência de Auto-Categorização & Auto-Detecção de Crédito/Débito ---
 
+function cleanNotificationDescription(rawText) {
+  if (!rawText) return '';
+  let clean = rawText;
+  
+  // Remove "Compra aprovada!" ou termos de aprovação
+  clean = clean.replace(/compra\s+aprovada[!\.]*/gi, '');
+  clean = clean.replace(/aprovada[!\.]*/gi, '');
+  clean = clean.replace(/compra\s+no\s+cart[aã]o/gi, '');
+  clean = clean.replace(/final\s+\d{4}/gi, '');
+  
+  // Remove valores monetários (ex: de R$ 15,49 ou R$ 15.49 ou 15,49)
+  clean = clean.replace(/(?:de\s+)?R\$\s*\d+[\.,]\d{2}/gi, '');
+  clean = clean.replace(/\d+[\.,]\d{2}/gi, '');
+  
+  // Remove datas (ex: em 30/05/26, 30/05/2026, 30-05-2026)
+  clean = clean.replace(/(?:em\s+)?\d{2}[\/\-]\d{2}[\/\-]\d{2,4}/gi, '');
+  
+  // Remove horas (ex: às 18:12, 18:12:00, as 18:12)
+  clean = clean.replace(/(?:[àa]s\s+)?\d{2}:\d{2}(?::\d{2})?/gi, '');
+  
+  // Remove termos bancários comuns
+  clean = clean.replace(/santander/gi, '');
+  clean = clean.replace(/itau/gi, '');
+  clean = clean.replace(/itaú/gi, '');
+  clean = clean.replace(/samsung\s+wallet/gi, '');
+  clean = clean.replace(/cartao/gi, '');
+  clean = clean.replace(/cartão/gi, '');
+  
+  // Limpa múltiplos espaços, vírgulas soltas no início/fim e hífens
+  clean = clean.replace(/^[,\-\s\:\/]+/, '');
+  clean = clean.replace(/[,\-\s\:\/\.]+$/, '');
+  
+  // Tenta extrair a parte do estabelecimento se sobrar um "em ESTABELECIMENTO"
+  // Ex: " em GIASSI SUPERMER" -> "GIASSI SUPERMER"
+  const emMatch = clean.match(/em\s+(.+)$/i);
+  if (emMatch && emMatch[1]) {
+    clean = emMatch[1];
+  }
+  
+  // Limpa novamente espaços e pontuações
+  clean = clean.trim().replace(/^[,\-\s\:\/]+/, '').replace(/[,\-\s\:\/\.]+$/, '').trim();
+  
+  if (!clean) return rawText.trim(); // Fallback
+  
+  // Se contiver Giassi Supermerca / Giassi Supermer -> converter para "Giassi Supermercado"
+  if (clean.toUpperCase().includes('GIASSI')) {
+    return 'Giassi Supermercado';
+  }
+  if (clean.toUpperCase().includes('HAMSGRILL') || clean.toUpperCase().includes('HAMS GRILL')) {
+    return 'HamsGrill';
+  }
+  if (clean.toUpperCase().includes('MASTERMIX')) {
+    return 'MasterMix';
+  }
+  
+  // Aplicar Title Case
+  return clean
+    .toLowerCase()
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+}
+
+function detectCardFromDescription(rawText) {
+  if (!rawText || !state.cards || state.cards.length === 0) return 'cash';
+  
+  // Encontrar 4 números seguidos no texto
+  const match = rawText.match(/\b\d{4}\b/);
+  if (match) {
+    const digits = match[0];
+    const foundCard = state.cards.find(c => c.lastFourDigits === digits);
+    if (foundCard) {
+      return foundCard.id;
+    }
+  }
+  
+  // Fallback: se não achar pelo número, tenta encontrar pelo nome do cartão no texto
+  const lowerText = rawText.toLowerCase();
+  for (const card of state.cards) {
+    if (card.name && lowerText.includes(card.name.toLowerCase())) {
+      return card.id;
+    }
+  }
+  
+  return 'cash';
+}
+
 function suggestCategory(description) {
   const desc = description.toLowerCase();
   
   if (desc.includes('uber') || desc.includes('posto') || desc.includes('combustivel') || desc.includes('combustível') || desc.includes('99app') || desc.includes('99 taxi') || desc.includes('cabify') || desc.includes('taxi') || desc.includes('pedagio') || desc.includes('pedágio')) {
     return 'cat-transporte';
   }
-  if (desc.includes('ifood') || desc.includes('mercado') || desc.includes('restaurante') || desc.includes('pizzaria') || desc.includes('padaria') || desc.includes('lanches') || desc.includes('supermercado') || desc.includes('atacadao') || desc.includes('pao de acucar') || desc.includes('pão de açúcar') || desc.includes('carrefour') || desc.includes('mcdonald') || desc.includes('burger king') || desc.includes('alimento') || desc.includes('comida') || desc.includes('cafe') || desc.includes('café') || desc.includes('açougue') || desc.includes('acougue') || desc.includes('angelina') || desc.includes('koch') || desc.includes('giassi') || desc.includes('brasil atacadista') || desc.includes('brasil atacado') || desc.includes('angeloni') || desc.includes('mercearia')) {
+  if (desc.includes('ifood') || desc.includes('mercado') || desc.includes('restaurante') || desc.includes('pizzaria') || desc.includes('padaria') || desc.includes('lanches') || desc.includes('supermercado') || desc.includes('supermerca') || desc.includes('atacadao') || desc.includes('pao de acucar') || desc.includes('pão de açúcar') || desc.includes('carrefour') || desc.includes('mcdonald') || desc.includes('burger king') || desc.includes('alimento') || desc.includes('comida') || desc.includes('cafe') || desc.includes('café') || desc.includes('açougue') || desc.includes('acougue') || desc.includes('angelina') || desc.includes('koch') || desc.includes('giassi') || desc.includes('brasil atacadista') || desc.includes('brasil atacado') || desc.includes('angeloni') || desc.includes('mercearia') || desc.includes('hamsgrill') || desc.includes('mastermix') || desc.includes('grill') || desc.includes('churrascaria') || desc.includes('lanchonete') || desc.includes('sorveteria') || desc.includes('hamburgueria')) {
     return 'cat-alimentacao';
   }
   if (desc.includes('netflix') || desc.includes('spotify') || desc.includes('cinema') || desc.includes('steam') || desc.includes('playstation') || desc.includes('xbox') || desc.includes('jogo') || desc.includes('lazer') || desc.includes('shopee') || desc.includes('mercadolivre') || desc.includes('mercado livre') || desc.includes('amazon') || desc.includes('aliexpress') || desc.includes('shein') || desc.includes('viagem') || desc.includes('ingresso') || desc.includes('show') || desc.includes('bar') || desc.includes('churrasco') || desc.includes('cerveja')) {
@@ -999,6 +1094,9 @@ function suggestCategory(description) {
 }
 
 function suggestPaymentMethod(description) {
+  const detected = detectCardFromDescription(description);
+  if (detected !== 'cash') return detected;
+
   const desc = description.toLowerCase();
   if (desc.includes('credito') || desc.includes('crédito') || desc.includes('cartao') || desc.includes('cartão')) {
     if (state.cards && state.cards.length > 0) {
@@ -1035,7 +1133,8 @@ function renderPendingTransactions() {
 
   pending.forEach(t => {
     // Calcular sugestões
-    const suggestedCatId = suggestCategory(t.description);
+    const cleanedDesc = cleanNotificationDescription(t.description);
+    const suggestedCatId = suggestCategory(cleanedDesc);
     const suggestedPayId = suggestPaymentMethod(t.description);
 
     const catObj = getCategoryById(suggestedCatId) || { icon: '🏷️', name: 'Outros (Despesas)' };
@@ -1054,7 +1153,7 @@ function renderPendingTransactions() {
         <span class="pending-card-amount">${formatCurrency(t.amount)}</span>
       </div>
       <div class="pending-card-body">
-        <span class="pending-card-desc">${t.description}</span>
+        <span class="pending-card-desc">${cleanedDesc} <small style="display:block; font-size:0.65rem; color:var(--text-muted); margin-top:2px;">(Original: ${t.description})</small></span>
         <div class="pending-suggestion-box" style="margin-top: 0.5rem; font-size: 0.75rem; color: var(--text-muted); display: flex; gap: 0.75rem; flex-wrap: wrap; background: rgba(255, 255, 255, 0.05); padding: 0.4rem; border-radius: 6px; border: 1px dashed rgba(255,255,255,0.1);">
           <span>💡 Sugerido: <strong style="color:var(--text-primary);">${catObj.icon} ${catObj.name}</strong></span>
           <span>⚡ Forma: <strong style="color:var(--text-primary);">${payName}</strong></span>
@@ -1115,7 +1214,10 @@ async function handleQuickApprovePending(id, cat, pay) {
   const trans = state.transactions.find(t => t.id === id);
   if (!trans) return;
 
+  const cleaned = cleanNotificationDescription(trans.description);
+
   // Atualizar a transação localmente
+  trans.description = cleaned;
   trans.category = cat;
   trans.paymentMethod = pay;
   trans.status = 'confirmed';
@@ -1138,8 +1240,8 @@ function handleConfirmPending(id) {
   const trans = state.transactions.find(t => t.id === id);
   if (!trans) return;
 
-  // Sugestões inteligentes de carregamento
-  const suggestedCatId = suggestCategory(trans.description);
+  const cleanedDesc = cleanNotificationDescription(trans.description);
+  const suggestedCatId = suggestCategory(cleanedDesc);
   const suggestedPayId = suggestPaymentMethod(trans.description);
 
   // Preencher a modal de transações
@@ -1149,7 +1251,7 @@ function handleConfirmPending(id) {
   
   // Formata o valor com duas casas decimais no padrão brasileiro para a máscara funcionar
   document.getElementById('trans-amount').value = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(trans.amount);
-  document.getElementById('trans-description').value = trans.description;
+  document.getElementById('trans-description').value = cleanedDesc; // Usar descrição limpa
   document.getElementById('trans-date').value = trans.date;
   
   // Preencher categorias e pré-selecionar a sugerida
@@ -2389,6 +2491,8 @@ const newCardLimit = document.getElementById('new-card-limit');
 const newCardClosing = document.getElementById('new-card-closing');
 const newCardDue = document.getElementById('new-card-due');
 const newCardColor = document.getElementById('new-card-color');
+const newCardDigits = document.getElementById('new-card-digits');
+const newCardOwner = document.getElementById('new-card-owner');
 
 if (btnAddCard) {
   // Inicializar a máscara monetária no limite do cartão
@@ -2400,6 +2504,8 @@ if (btnAddCard) {
     const closing = parseInt(newCardClosing.value, 10);
     const due = parseInt(newCardDue.value, 10);
     const color = newCardColor.value;
+    const digits = newCardDigits ? newCardDigits.value.trim() : '';
+    const owner = newCardOwner ? newCardOwner.value : 'Jacson';
 
     if (!name || limit <= 0 || isNaN(closing) || isNaN(due)) {
       showToast("Por favor, preencha todos os campos do cartão.", true);
@@ -2418,7 +2524,9 @@ if (btnAddCard) {
       limit,
       closingDay: closing,
       dueDay: due,
-      color
+      color,
+      lastFourDigits: digits || '',
+      owner: owner || 'Jacson'
     };
 
     state.cards.push(newCard);
@@ -2430,6 +2538,8 @@ if (btnAddCard) {
     newCardLimit.value = '0,00';
     newCardClosing.value = '';
     newCardDue.value = '';
+    if (newCardDigits) newCardDigits.value = '';
+    if (newCardOwner) newCardOwner.value = 'Jacson';
 
     renderSettingsCards();
     showToast(`Cartão "${name}" cadastrado com sucesso!`);
@@ -2546,6 +2656,8 @@ const editCardLimit = document.getElementById('edit-card-limit');
 const editCardClosing = document.getElementById('edit-card-closing');
 const editCardDue = document.getElementById('edit-card-due');
 const editCardColor = document.getElementById('edit-card-color');
+const editCardDigits = document.getElementById('edit-card-digits');
+const editCardOwner = document.getElementById('edit-card-owner');
 
 if (cardEditModal) {
   document.getElementById('btn-close-card-edit-modal').addEventListener('click', closeCardEditModal);
@@ -2563,6 +2675,8 @@ function openCardEditModal(id) {
   editCardClosing.value = card.closingDay;
   editCardDue.value = card.dueDay;
   editCardColor.value = card.color || '#4f46e5';
+  if (editCardDigits) editCardDigits.value = card.lastFourDigits || '';
+  if (editCardOwner) editCardOwner.value = card.owner || 'Jacson';
 
   cardEditModal.classList.add('active');
 }
@@ -2581,6 +2695,8 @@ if (cardEditForm) {
     const closing = parseInt(editCardClosing.value, 10);
     const due = parseInt(editCardDue.value, 10);
     const color = editCardColor.value;
+    const digits = editCardDigits ? editCardDigits.value.trim() : '';
+    const owner = editCardOwner ? editCardOwner.value : 'Jacson';
 
     if (!name || limit <= 0 || isNaN(closing) || isNaN(due)) {
       showToast("Por favor, preencha todos os campos do cartão.", true);
@@ -2600,6 +2716,8 @@ if (cardEditForm) {
       card.closingDay = closing;
       card.dueDay = due;
       card.color = color;
+      card.lastFourDigits = digits || '';
+      card.owner = owner || 'Jacson';
       
       await dbUpsertCard(card); // Salvar no Supabase
     }

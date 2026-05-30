@@ -442,6 +442,18 @@
                   <label for="new-card-color">Cor</label>
                   <input type="color" id="new-card-color" value="#8a05be" style="padding:0.2rem; height:42px;">
                 </div>
+                <div class="form-group">
+                  <label for="new-card-digits">4 Últimos Dígitos</label>
+                  <input type="text" id="new-card-digits" placeholder="Ex: 8587" maxlength="4" pattern="\d{4}" title="Exatamente 4 dígitos numéricos">
+                </div>
+                <div class="form-group">
+                  <label for="new-card-owner">Titular</label>
+                  <select id="new-card-owner">
+                    <option value="Jacson">Jacson</option>
+                    <option value="Ana">Ana</option>
+                    <option value="Família">Família</option>
+                  </select>
+                </div>
                 <button class="btn btn-primary" id="btn-add-card">Adicionar</button>
               </form>
               
@@ -699,6 +711,18 @@
         <div class="form-group">
           <label for="edit-card-color">Cor</label>
           <input type="color" id="edit-card-color" value="#8a05be" style="padding:0.2rem; height:42px;">
+        </div>
+        <div class="form-group">
+          <label for="edit-card-digits">4 Últimos Dígitos</label>
+          <input type="text" id="edit-card-digits" placeholder="Ex: 8587" maxlength="4" pattern="\d{4}" title="Exatamente 4 dígitos numéricos">
+        </div>
+        <div class="form-group">
+          <label for="edit-card-owner">Titular</label>
+          <select id="edit-card-owner">
+            <option value="Jacson">Jacson</option>
+            <option value="Ana">Ana</option>
+            <option value="Família">Família</option>
+          </select>
         </div>
         <div class="form-actions">
           <button type="button" class="btn btn-secondary" id="btn-cancel-card-edit">Cancelar</button>

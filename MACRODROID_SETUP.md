@@ -75,31 +75,27 @@ O banco de dados precisa do ponto para reconhecer os centavos.
 4. **Substituir por** (Replace with): Digite um ponto final: `.`
 5. **Variável de destino** (Save to variable): Escolha `valor_final`.
 
-### Ação 6: Enviar Dados ao Supabase (HTTP POST)
+### Ação 6: Enviar Dados à Edge Function do Supabase (HTTP POST)
 1. Caminho: **Conectividade** (Connectivity) ➔ **Requisição HTTP** (HTTP Request).
 2. **Método** (Method): Selecione **POST**.
-3. **URL**: Cole a URL da API das suas transações:
+3. **URL**: Cole a URL da sua Edge Function de processamento inteligente:
    ```text
-   https://gqqjxhfqlbflfrpjnojt.supabase.co/rest/v1/transactions
+   https://gqqjxhfqlbflfrpjnojt.supabase.co/functions/v1/process-notification
    ```
 4. **Tipo de Conteúdo** (Content-Type): Escolha `application/json`.
-5. **Cabeçalhos** (Headers): Toque no botão para adicionar cabeçalhos e insira estes 3 cabeçalhos exatamente assim:
+5. **Cabeçalhos** (Headers): Toque no botão para adicionar cabeçalhos e insira estes 2 cabeçalhos exatamente assim:
    * Chave: `apikey` | Valor: `eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdxcWp4aGZxbGJmbGZycGpub2p0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwOTE5OTgsImV4cCI6MjA5NTY2Nzk5OH0._QSbapoTPdRP4_Un3M5-hICi3gwoSlJRUpjP4dXhJ0Y`
    * Chave: `Authorization` | Valor: `Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdxcWp4aGZxbGJmbGZycGpub2p0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwOTE5OTgsImV4cCI6MjA5NTY2Nzk5OH0._QSbapoTPdRP4_Un3M5-hICi3gwoSlJRUpjP4dXhJ0Y`
-   * Chave: `Prefer` | Valor: `return=minimal`
-6. **Corpo do POST (Body / Conteúdo)**: Cole o seguinte código JSON:
+6. **Corpo do POST (Body / Conteúdo)**: Cole o seguinte código JSON simplificado:
    ```json
    {
-     "id": "{lv=id_transacao}",
+     "notification_title": "{not_title}",
+     "notification_text": "{notification}",
      "amount": {lv=valor_final},
-     "description": "{not_title} - {notification}",
-     "date": "{lv=data_compra}",
-     "category": "cat-outros-desp",
-     "type": "expense",
-     "status": "pending",
-     "payment_method": "cash"
+     "date": "{lv=data_compra}"
    }
    ```
+   *(Nota: a inteligência no servidor do Supabase usará a IA do Gemini para extrair e formatar tudo automaticamente: limpando o nome do estabelecimento, classificando a categoria certa de despesa e detectando o cartão de crédito através dos 4 últimos dígitos).*
 7. Marque a opção **Bloquear até concluir** (Block until complete) e clique em OK.
 
 ---
@@ -120,12 +116,11 @@ Se você preferir aprovar a despesa na mesma hora em que a notificação de comp
 4. Na tela de configuração:
    * **Mensagem de diálogo:** Digite exatamente: `Registrar compra de R$ {lv=valor_raw}?`
    * **Salvar índice selecionado em variável numérica:** Deixe como **`Nenhum`**.
-   * **Salvar valor selecionado em variável string:** Selecione a variável **`opcao_selecionada`** (toque no dropdown e clique nela. Se não aparecer, crie a variável de texto clicando no `+` ao lado).
+   * **Salvar valor selecionado em variável string:** Selecione a variável **`opcao_selecionada`** (toque no dropdown e clique nela).
    * **Estilo botão:** Deixe como **`Texto simples`**.
    * **Opções do diálogo:** Deixe como **`Definir manualmente`**.
    * Toque no botão azul **`[ ADICIONAR ITEM ]`** e escreva: `APROVAR`
    * Toque novamente no **`[ ADICIONAR ITEM ]`** e escreva: `CANCELAR`
-   * *(Opcional: Você pode colorir os botões de verde e vermelho e deixá-los em negrito como preferir!)*
    * Toque em **`OK`** no canto inferior direito para salvar a ação.
 
 ### Passo C: Ajustar a Ordem das Ações
@@ -141,14 +136,15 @@ Se você preferir aprovar a despesa na mesma hora em que a notificação de comp
 5. Configure como: **Igual a** (Equal to) ➔ digite no valor exatamente: **`APROVAR`** (em maiúsculas).
 6. Salve a restrição clicando em **OK**.
 
-### Passo E: Alterar o status para Confirmado no JSON
-1. Dê dois toques rápidos na ação de **"Requisição HTTP (POST)"** para abrir as configurações.
-2. Role até a caixa de texto do JSON (fim da página).
-3. Mude a linha do status de `"pending"` para:
-   ```json
-   "status": "confirmed",
-   ```
-4. Salve clicando em **OK**.
+### Passo E: Configuração das Chaves de IA no Servidor (Supabase)
+Como a Edge Function usa o Gemini para classificar e processar a transação automaticamente, você deve configurar sua chave da API do Gemini nas configurações do seu projeto Supabase:
+1. Acesse o painel do seu projeto no **Supabase** (https://supabase.com).
+2. Vá em **Project Settings** (ícone de engrenagem) ➔ **Edge Functions**.
+3. Em **Secrets**, clique em **Add new secret**.
+4. Adicione o seguinte par:
+   * **Name:** `GEMINI_API_KEY`
+   * **Value:** *(Cole sua chave da API do Gemini aqui)*
+5. Clique em **Save** para ativar o processamento por inteligência artificial no servidor.
 
 ---
 
