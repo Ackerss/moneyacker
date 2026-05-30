@@ -1647,6 +1647,10 @@ body {
     gap: 1rem !important;
   }
   
+  #tab-settings .panel {
+    padding-bottom: 5rem !important;
+  }
+  
   .panel-header {
     padding-bottom: 0.75rem !important;
   }
@@ -1686,8 +1690,14 @@ body {
 
   /* Otimização das Categorias no Mobile */
   .categories-list {
-    grid-template-columns: repeat(2, 1fr) !important;
+    grid-template-columns: 1fr !important;
     gap: 0.5rem !important;
+  }
+  
+  /* Otimização dos Cartões no Mobile */
+  .cards-list {
+    grid-template-columns: 1fr !important;
+    gap: 1rem !important;
   }
   
   .category-config-item {
