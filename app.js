@@ -2706,6 +2706,7 @@ window.addEventListener('DOMContentLoaded', async () => {
         .then(reg => console.log('Service Worker registrado com sucesso:', reg.scope))
         .catch(err => console.error('Erro ao registrar Service Worker:', err));
     });
+  }
 });
 
 // =============================================================
