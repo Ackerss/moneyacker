@@ -40,8 +40,8 @@ let flowChartInstance = null;
 // 4. Inicialização & Persistência de Dados (Local Storage)
 // 4. Inicialização & Persistência de Dados (Supabase + Local Storage Cache)
 let supabaseClient = null;
-let supabaseUrl = localStorage.getItem('moneyacker_supabase_url') || '';
-let supabaseKey = localStorage.getItem('moneyacker_supabase_key') || '';
+let supabaseUrl = localStorage.getItem('moneyacker_supabase_url') || 'https://gqqjxhfqlbflfrpjnojt.supabase.co';
+let supabaseKey = localStorage.getItem('moneyacker_supabase_key') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdxcWp4aGZxbGJmbGZycGpub2p0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwOTE5OTgsImV4cCI6MjA5NTY2Nzk5OH0._QSbapoTPdRP4_Un3M5-hICi3gwoSlJRUpjP4dXhJ0Y';
 
 function loadState() {
   const localData = localStorage.getItem('moneyacker_data');
