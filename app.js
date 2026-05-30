@@ -833,9 +833,14 @@ navItems.forEach(item => {
   item.addEventListener('click', () => {
     const tabId = item.getAttribute('data-tab');
     
-    // Altera active no menu
-    navItems.forEach(n => n.classList.remove('active'));
-    item.classList.add('active');
+    // Altera active no menu (tanto sidebar quanto bottom nav)
+    navItems.forEach(n => {
+      if (n.getAttribute('data-tab') === tabId) {
+        n.classList.add('active');
+      } else {
+        n.classList.remove('active');
+      }
+    });
     
     // Altera active no container
     tabPanes.forEach(pane => pane.classList.remove('active'));
