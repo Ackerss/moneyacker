@@ -2213,14 +2213,22 @@ function renderSettingsCards() {
     const li = document.createElement('li');
     li.innerHTML = `
       <div class="credit-card" style="background: linear-gradient(135deg, ${card.color || '#4f46e5'}, ${adjustColorBrightness(card.color || '#4f46e5', -30)})">
-        <div class="card-top">
+        <div class="card-top" style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
           <span class="card-brand">${card.name}</span>
-          <button class="btn-delete-card" data-id="${card.id}" title="Excluir Cartão">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="3 6 5 6 21 6"></polyline>
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
-            </svg>
-          </button>
+          <div class="card-top-actions" style="display: flex; gap: 0.35rem; align-items: center;">
+            <button class="btn-edit-card" data-id="${card.id}" title="Editar Cartão" style="background: none; border: none; color: rgba(255,255,255,0.7); cursor: pointer; padding: 0.2rem; display: inline-flex; align-items: center; transition: var(--transition-fast);">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 14px; height: 14px;">
+                <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+                <path d="M18.5 2.5a2.121 2.121 0 1 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+              </svg>
+            </button>
+            <button class="btn-delete-card" data-id="${card.id}" title="Excluir Cartão">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
+            </button>
+          </div>
         </div>
         <div class="card-middle">
           <div class="card-limit-info">Limite total</div>
@@ -2248,6 +2256,14 @@ function renderSettingsCards() {
       deleteCard(id);
     });
   });
+
+  // Vincular eventos de editar cartão
+  document.querySelectorAll('.btn-edit-card').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const id = btn.getAttribute('data-id');
+      openCardEditModal(id);
+    });
+  });
 }
 
 function deleteCard(id) {
@@ -2270,6 +2286,87 @@ function deleteCard(id) {
   dbDeleteCard(id);
   renderSettingsCards();
   showToast("Cartão excluído com sucesso!");
+}
+
+// --- Edição de Cartão de Crédito ---
+const cardEditModal = document.getElementById('card-edit-modal');
+const cardEditForm = document.getElementById('card-edit-form');
+const editCardId = document.getElementById('edit-card-id');
+const editCardName = document.getElementById('edit-card-name');
+const editCardLimit = document.getElementById('edit-card-limit');
+const editCardClosing = document.getElementById('edit-card-closing');
+const editCardDue = document.getElementById('edit-card-due');
+const editCardColor = document.getElementById('edit-card-color');
+
+if (cardEditModal) {
+  document.getElementById('btn-close-card-edit-modal').addEventListener('click', closeCardEditModal);
+  document.getElementById('btn-cancel-card-edit').addEventListener('click', closeCardEditModal);
+  setupMoneyMask(editCardLimit); // Configura máscara no campo de edição
+}
+
+function openCardEditModal(id) {
+  const card = state.cards.find(c => c.id === id);
+  if (!card) return;
+
+  editCardId.value = id;
+  editCardName.value = card.name;
+  editCardLimit.value = new Intl.NumberFormat('pt-BR', { minimumFractionDigits: 2 }).format(card.limit);
+  editCardClosing.value = card.closingDay;
+  editCardDue.value = card.dueDay;
+  editCardColor.value = card.color || '#4f46e5';
+
+  cardEditModal.classList.add('active');
+}
+
+function closeCardEditModal() {
+  cardEditModal.classList.remove('active');
+}
+
+if (cardEditForm) {
+  cardEditForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+
+    const id = editCardId.value;
+    const name = editCardName.value.trim();
+    const limit = parseMaskedValue(editCardLimit.value);
+    const closing = parseInt(editCardClosing.value, 10);
+    const due = parseInt(editCardDue.value, 10);
+    const color = editCardColor.value;
+
+    if (!name || limit <= 0 || isNaN(closing) || isNaN(due)) {
+      showToast("Por favor, preencha todos os campos do cartão.", true);
+      return;
+    }
+
+    if (closing < 1 || closing > 31 || due < 1 || due > 31) {
+      showToast("Os dias de fechamento/vencimento devem ser entre 1 e 31.", true);
+      return;
+    }
+
+    // Encontrar o cartão e atualizar
+    const card = state.cards.find(c => c.id === id);
+    if (card) {
+      card.name = name;
+      card.limit = limit;
+      card.closingDay = closing;
+      card.dueDay = due;
+      card.color = color;
+      
+      await dbUpsertCard(card); // Salvar no Supabase
+    }
+
+    saveState();
+    closeCardEditModal();
+    renderSettingsCards();
+    
+    // Atualizar dashboard se estiver nele
+    const activeTab = document.querySelector('.nav-item.active').getAttribute('data-tab');
+    if (activeTab === 'dashboard') {
+      renderDashboard();
+    }
+    
+    showToast("Cartão de crédito atualizado com sucesso!");
+  });
 }
 
 // Função auxiliar para escurecer a cor do degradê do cartão de crédito
