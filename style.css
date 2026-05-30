@@ -1050,322 +1050,6 @@ body {
   opacity: 1;
 }
 
-/* 12. Responsividade (Telas Menores) */
-.mobile-nav {
-  display: none;
-}
-
-@media (max-width: 1024px) {
-  .dashboard-grid {
-    grid-template-columns: 1fr;
-  }
-}
-
-@media (max-width: 768px) {
-  :root {
-    --sidebar-width: 0px;
-  }
-  
-  .sidebar {
-    transform: translateX(-100%);
-    width: 260px;
-  }
-  
-  .sidebar.active {
-    transform: translateX(0);
-    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.1);
-  }
-  
-  .main-content {
-    margin-left: 0;
-    padding: 1.5rem 1.5rem 80px 1.5rem; /* Padding extra na parte inferior para a barra de navegação */
-  }
-  
-  /* Barra de Navegação Móvel */
-  .mobile-nav {
-    display: flex;
-    justify-content: space-around;
-    align-items: center;
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    height: 66px;
-    background-color: rgba(255, 255, 255, 0.85);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    border-top: 1px solid var(--border-color);
-    box-shadow: 0 -4px 24px rgba(15, 23, 42, 0.05);
-    z-index: 999;
-    padding: 0.25rem 0.5rem;
-    padding-bottom: calc(0.25rem + env(safe-area-inset-bottom, 0px)); /* Suporte para notch de iPhones modernos */
-  }
-  
-  .mobile-nav .nav-item {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.2rem;
-    background: none;
-    border: none;
-    color: var(--text-secondary);
-    font-family: inherit;
-    font-size: 0.72rem;
-    font-weight: 500;
-    cursor: pointer;
-    padding: 0.4rem;
-    border-radius: 12px;
-    width: auto;
-    flex: 1;
-    text-align: center;
-    height: 100%;
-    transition: var(--transition-fast);
-  }
-  
-  .mobile-nav .nav-item:active {
-    transform: scale(0.95);
-  }
-  
-  .mobile-nav .nav-item.active {
-    background: none;
-    color: var(--primary);
-    font-weight: 700;
-  }
-  
-  .mobile-nav .nav-icon {
-    width: 22px;
-    height: 22px;
-    margin: 0;
-    transition: transform 0.2s ease;
-  }
-  
-  .mobile-nav .nav-item.active .nav-icon {
-    transform: translateY(-2px);
-    color: var(--primary);
-  }
-
-  .mobile-nav .nav-item:hover .nav-icon {
-    transform: none; /* Desabilita animação lateral do desktop */
-  }
-
-  /* Evitar zoom automático irritante em campos de formulário no mobile */
-  .form-group input,
-  .form-group select,
-  .add-category-form input,
-  .add-category-form select,
-  .search-box input,
-  .filter-controls select {
-    font-size: 16px !important;
-  }
-
-  /* Otimização do Cabeçalho para Mobile */
-  .main-header {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 1rem;
-    margin-bottom: 1.5rem;
-  }
-  
-  .header-actions {
-    width: 100%;
-    display: flex;
-    gap: 0.75rem;
-  }
-  
-  .header-actions button {
-    flex: 1;
-    font-size: 0.85rem;
-    padding: 0.65rem 1rem;
-    width: 100%;
-  }
-
-  .charts-container {
-    grid-template-columns: 1fr;
-  }
-
-  /* Transformar tabela de transações em lista de cards no mobile */
-  .transactions-table {
-    display: block;
-    width: 100%;
-  }
-  
-  .transactions-table thead {
-    display: none;
-  }
-  
-  .transactions-table tbody {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-    width: 100%;
-  }
-  
-  .transactions-table tr {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    grid-template-rows: auto auto auto;
-    grid-template-areas:
-      "desc value"
-      "date cat"
-      "actions actions";
-    gap: 0.5rem;
-    padding: 1rem;
-    background-color: var(--bg-primary);
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    width: 100%;
-    transition: transform var(--transition-fast);
-  }
-  
-  .transactions-table tr:hover {
-    transform: translateX(2px);
-  }
-  
-  .transactions-table tr:hover td {
-    background-color: transparent;
-  }
-  
-  .transactions-table td {
-    padding: 0 !important;
-    border-bottom: none !important;
-    display: flex;
-    align-items: center;
-  }
-  
-  .transactions-table td:nth-child(1) {
-    grid-area: date;
-    font-size: 0.78rem;
-    color: var(--text-muted);
-  }
-  
-  .transactions-table td:nth-child(2) {
-    grid-area: desc;
-    font-size: 0.92rem;
-    font-weight: 600;
-    color: var(--text-primary);
-  }
-  
-  .transactions-table td:nth-child(3) {
-    grid-area: cat;
-    justify-content: flex-end;
-  }
-  
-  .transactions-table td:nth-child(4) {
-    grid-area: value;
-    font-size: 0.95rem;
-    font-weight: 700;
-    justify-content: flex-end;
-  }
-  
-  .transactions-table td:nth-child(5) {
-    grid-area: actions;
-    border-top: 1px dashed var(--border-color);
-    padding-top: 0.75rem !important;
-    margin-top: 0.4rem;
-    justify-content: center;
-    width: 100%;
-  }
-  
-  /* Ajustar o badge da categoria na tabela mobile */
-  .transactions-table td:nth-child(3) .badge-category {
-    padding: 0.25rem 0.5rem;
-    font-size: 0.75rem;
-  }
-
-  /* Otimização dos Formulários das Configurações no Mobile */
-  .add-category-form {
-    flex-direction: column;
-    width: 100%;
-    gap: 0.75rem;
-  }
-  
-  .add-category-form input,
-  .add-category-form select,
-  .add-category-form button {
-    width: 100%;
-  }
-
-  .add-card-form {
-    grid-template-columns: 1fr;
-    gap: 0.85rem;
-    padding: 1rem;
-  }
-  
-  .add-card-form button {
-    width: 100%;
-    margin-top: 0.5rem;
-    grid-column: auto;
-  }
-
-  .pending-grid {
-    grid-template-columns: 1fr;
-  }
-
-  /* Otimização de Modais para Celulares */
-  .modal-overlay {
-    padding: 1rem 0.5rem;
-  }
-  
-  .modal {
-    padding: 1.5rem 1.25rem;
-    width: 100%;
-    max-width: 92%;
-    border-radius: var(--radius-md);
-  }
-  
-  .form-actions {
-    margin-top: 1rem;
-    gap: 0.5rem;
-  }
-  
-  .form-actions button {
-    flex: 1;
-    font-size: 0.85rem;
-    padding: 0.7rem 0.5rem;
-  }
-
-  /* Otimização dos Filtros de Transações no Mobile */
-  .transactions-filter-bar {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 0.75rem;
-    padding: 0.85rem;
-  }
-  
-  .search-box {
-    max-width: 100%;
-    width: 100%;
-  }
-  
-  .filter-controls {
-    width: 100%;
-    display: flex;
-    gap: 0.5rem;
-  }
-  
-  .filter-controls select {
-    flex: 1;
-    width: 100%;
-  }
-
-  /* Otimização de Modais para Celulares Pequenos */
-  @media (max-width: 480px) {
-    .modal {
-      padding: 1.25rem 1rem;
-      border-radius: var(--radius-md);
-    }
-    
-    .modal-header h3 {
-      font-size: 1.15rem;
-    }
-    
-    .main-content {
-      padding: 1rem 1rem 80px 1rem;
-    }
-  }
-}
-
 /* =============================================================
    Novos Estilos: Máscara, OCR e Cartões de Crédito
    ============================================================= */
@@ -1888,5 +1572,318 @@ body {
   color: var(--text-primary) !important;
 }
 
+/* 12. Responsividade (Telas Menores) */
+.mobile-nav {
+  display: none;
+}
 
+@media (max-width: 1024px) {
+  .dashboard-grid {
+    grid-template-columns: 1fr;
+  }
+}
 
+@media (max-width: 768px) {
+  :root {
+    --sidebar-width: 0px;
+  }
+  
+  .sidebar {
+    transform: translateX(-100%);
+    width: 260px;
+  }
+  
+  .sidebar.active {
+    transform: translateX(0);
+    box-shadow: 10px 0 30px rgba(0, 0, 0, 0.1);
+  }
+  
+  .main-content {
+    margin-left: 0;
+    padding: 1.5rem 1.5rem 80px 1.5rem; /* Padding extra na parte inferior para a barra de navegação */
+  }
+  
+  /* Barra de Navegação Móvel */
+  .mobile-nav {
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    height: 66px;
+    background-color: rgba(255, 255, 255, 0.85);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-top: 1px solid var(--border-color);
+    box-shadow: 0 -4px 24px rgba(15, 23, 42, 0.05);
+    z-index: 999;
+    padding: 0.25rem 0.5rem;
+    padding-bottom: calc(0.25rem + env(safe-area-inset-bottom, 0px)); /* Suporte para notch de iPhones modernos */
+  }
+  
+  .mobile-nav .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 0.2rem;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    font-family: inherit;
+    font-size: 0.72rem;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 0.4rem;
+    border-radius: 12px;
+    width: auto;
+    flex: 1;
+    text-align: center;
+    height: 100%;
+    transition: var(--transition-fast);
+  }
+  
+  .mobile-nav .nav-item:active {
+    transform: scale(0.95);
+  }
+  
+  .mobile-nav .nav-item.active {
+    background: none;
+    color: var(--primary);
+    font-weight: 700;
+  }
+  
+  .mobile-nav .nav-icon {
+    width: 22px;
+    height: 22px;
+    margin: 0;
+    transition: transform 0.2s ease;
+  }
+  
+  .mobile-nav .nav-item.active .nav-icon {
+    transform: translateY(-2px);
+    color: var(--primary);
+  }
+
+  .mobile-nav .nav-item:hover .nav-icon {
+    transform: none; /* Desabilita animação lateral do desktop */
+  }
+
+  /* Evitar zoom automático irritante em campos de formulário no mobile */
+  .form-group input,
+  .form-group select,
+  .add-category-form input,
+  .add-category-form select,
+  .search-box input,
+  .filter-controls select {
+    font-size: 16px !important;
+  }
+
+  /* Otimização do Cabeçalho para Mobile */
+  .main-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .header-actions {
+    width: 100%;
+    display: flex;
+    gap: 0.75rem;
+  }
+  
+  .header-actions button {
+    flex: 1;
+    font-size: 0.85rem;
+    padding: 0.65rem 1rem;
+    width: 100%;
+  }
+
+  .charts-container {
+    grid-template-columns: 1fr;
+  }
+
+  /* Transformar tabela de transações em lista de cards no mobile */
+  .transactions-table {
+    display: block;
+    width: 100%;
+  }
+  
+  .transactions-table thead {
+    display: none;
+  }
+  
+  .transactions-table tbody {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+    width: 100%;
+  }
+  
+  .transactions-table tr {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    grid-template-rows: auto auto auto;
+    grid-template-areas:
+      "desc value"
+      "date cat"
+      "actions actions";
+    gap: 0.5rem;
+    padding: 1rem;
+    background-color: var(--bg-primary);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    width: 100%;
+    transition: transform var(--transition-fast);
+  }
+  
+  .transactions-table tr:hover {
+    transform: translateX(2px);
+  }
+  
+  .transactions-table tr:hover td {
+    background-color: transparent;
+  }
+  
+  .transactions-table td {
+    padding: 0 !important;
+    border-bottom: none !important;
+    display: flex;
+    align-items: center;
+  }
+  
+  .transactions-table td:nth-child(1) {
+    grid-area: date;
+    font-size: 0.78rem;
+    color: var(--text-muted);
+  }
+  
+  .transactions-table td:nth-child(2) {
+    grid-area: desc;
+    font-size: 0.92rem;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+  
+  .transactions-table td:nth-child(3) {
+    grid-area: cat;
+    justify-content: flex-end;
+  }
+  
+  .transactions-table td:nth-child(4) {
+    grid-area: value;
+    font-size: 0.95rem;
+    font-weight: 700;
+    justify-content: flex-end;
+  }
+  
+  .transactions-table td:nth-child(5) {
+    grid-area: actions;
+    border-top: 1px dashed var(--border-color);
+    padding-top: 0.75rem !important;
+    margin-top: 0.4rem;
+    justify-content: center;
+    width: 100%;
+  }
+  
+  /* Ajustar o badge da categoria na tabela mobile */
+  .transactions-table td:nth-child(3) .badge-category {
+    padding: 0.25rem 0.5rem;
+    font-size: 0.75rem;
+  }
+
+  /* Otimização dos Formulários das Configurações no Mobile */
+  .add-category-form {
+    flex-direction: column;
+    width: 100%;
+    gap: 0.75rem;
+  }
+  
+  .add-category-form input,
+  .add-category-form select,
+  .add-category-form button {
+    width: 100%;
+  }
+
+  .add-card-form {
+    grid-template-columns: 1fr;
+    gap: 0.85rem;
+    padding: 1rem;
+  }
+  
+  .add-card-form button {
+    width: 100%;
+    margin-top: 0.5rem;
+    grid-column: auto;
+  }
+
+  .pending-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Otimização de Modais para Celulares */
+  .modal-overlay {
+    padding: 1rem 0.5rem;
+  }
+  
+  .modal {
+    padding: 1.5rem 1.25rem;
+    width: 100%;
+    max-width: 92%;
+    border-radius: var(--radius-md);
+  }
+  
+  .form-actions {
+    margin-top: 1rem;
+    gap: 0.5rem;
+  }
+  
+  .form-actions button {
+    flex: 1;
+    font-size: 0.85rem;
+    padding: 0.7rem 0.5rem;
+  }
+
+  /* Otimização dos Filtros de Transações no Mobile */
+  .transactions-filter-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+    padding: 0.85rem;
+  }
+  
+  .search-box {
+    max-width: 100%;
+    width: 100%;
+  }
+  
+  .filter-controls {
+    width: 100%;
+    display: flex;
+    gap: 0.5rem;
+  }
+  
+  .filter-controls select {
+    flex: 1;
+    width: 100%;
+  }
+
+  /* Otimização de Modais para Celulares Pequenos */
+  @media (max-width: 480px) {
+    .modal {
+      padding: 1.25rem 1rem;
+      border-radius: var(--radius-md);
+    }
+    
+    .modal-header h3 {
+      font-size: 1.15rem;
+    }
+    
+    .main-content {
+      padding: 1rem 1rem 80px 1rem;
+    }
+  }
+}
