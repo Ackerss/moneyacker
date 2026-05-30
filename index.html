@@ -676,6 +676,48 @@
     </div>
   </div>
 
+  <!-- 12. MODAL: CONFIRMAÇÃO DE EXCLUSÃO SIMPLES -->
+  <div class="modal-overlay" id="confirm-delete-modal">
+    <div class="modal" style="max-width: 400px; text-align: center;">
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 1rem;">
+        <div style="background-color: var(--expense-light); color: var(--expense); width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 0.5rem;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 30px; height: 30px;">
+            <polyline points="3 6 5 6 21 6"></polyline>
+            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+          </svg>
+        </div>
+        <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--text-primary); margin: 0;" id="confirm-delete-title">Excluir Item?</h3>
+        <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5; margin: 0;" id="confirm-delete-message">Tem certeza que deseja excluir este item? Esta ação não pode ser desfeita.</p>
+        <div style="display: flex; gap: 0.75rem; width: 100%; margin-top: 1rem;">
+          <button class="btn" id="btn-confirm-delete-cancel" style="flex: 1; padding: 0.75rem; border-radius: 10px; border: 1.5px solid var(--border-color); background: none; font-weight: 600; color: var(--text-secondary); cursor: pointer; transition: var(--transition-fast);">Cancelar</button>
+          <button class="btn" id="btn-confirm-delete-execute" style="flex: 1; padding: 0.75rem; border-radius: 10px; border: none; background-color: var(--expense); font-weight: 600; color: white; cursor: pointer; transition: var(--transition-fast);">Excluir</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 13. MODAL: CONFIRMAÇÃO DE COMPRA PARCELADA -->
+  <div class="modal-overlay" id="confirm-installment-modal">
+    <div class="modal" style="max-width: 440px; text-align: center;">
+      <div style="display: flex; flex-direction: column; align-items: center; gap: 1rem;">
+        <div style="background-color: #fef3c7; color: #d97706; width: 60px; height: 60px; border-radius: 50%; display: flex; align-items: center; justify-content: center; margin-bottom: 0.5rem;">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 30px; height: 30px;">
+            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+            <line x1="12" y1="9" x2="12" y2="13"></line>
+            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+          </svg>
+        </div>
+        <h3 style="font-size: 1.25rem; font-weight: 700; color: var(--text-primary); margin: 0;">Excluir Compra Parcelada?</h3>
+        <p style="font-size: 0.9rem; color: var(--text-secondary); line-height: 1.5; margin: 0;" id="confirm-installment-message">Esta despesa faz parte de uma compra parcelada. Como deseja proceder?</p>
+        <div style="display: flex; flex-direction: column; gap: 0.6rem; width: 100%; margin-top: 1rem;">
+          <button class="btn" id="btn-confirm-inst-all" style="width: 100%; padding: 0.75rem; border-radius: 10px; border: none; background-color: var(--expense); font-weight: 600; color: white; cursor: pointer; transition: var(--transition-fast);">⚠️ Excluir TODAS as parcelas</button>
+          <button class="btn" id="btn-confirm-inst-single" style="width: 100%; padding: 0.75rem; border-radius: 10px; border: 1.5px solid var(--border-color); background-color: var(--bg-secondary); font-weight: 600; color: var(--text-primary); cursor: pointer; transition: var(--transition-fast);">Excluir APENAS esta parcela</button>
+          <button class="btn" id="btn-confirm-inst-cancel" style="width: 100%; padding: 0.75rem; border-radius: 10px; border: none; background: none; font-weight: 600; color: var(--text-muted); cursor: pointer; transition: var(--transition-fast);">Cancelar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <!-- Notificação Toast (Aviso flutuante de Sucesso / Erro) -->
   <div class="toast" id="toast">
     <span id="toast-message">Mensagem</span>

@@ -1402,27 +1402,45 @@ function deleteTransactionHandler(id, callback) {
   if (!transToDelete) return;
 
   if (transToDelete.installmentId) {
-    if (confirm("Esta despesa é parte de uma compra parcelada. Deseja excluir TODAS as parcelas vinculadas?\n(Clique em 'Cancelar' para excluir apenas esta parcela).")) {
-      const installmentsToDelete = state.transactions.filter(t => t.installmentId === transToDelete.installmentId);
-      state.transactions = state.transactions.filter(t => t.installmentId !== transToDelete.installmentId);
-      installmentsToDelete.forEach(async t => {
-        await dbDeleteTransaction(t.id);
-      });
-      showToast("Todas as parcelas foram excluídas!");
-    } else {
-      state.transactions = state.transactions.filter(t => t.id !== id);
-      dbDeleteTransaction(id);
-      showToast("Apenas esta parcela foi excluída.");
-    }
+    showConfirmInstallmentModal({
+      message: `A despesa "${transToDelete.description}" faz parte de uma compra parcelada. Como deseja excluí-la?`,
+      onConfirmSingle: () => {
+        state.transactions = state.transactions.filter(t => t.id !== id);
+        dbDeleteTransaction(id);
+        saveState();
+        showToast("Apenas esta parcela foi excluída.");
+        if (callback) callback();
+      },
+      onConfirmAll: async () => {
+        const installmentsToDelete = state.transactions.filter(t => t.installmentId === transToDelete.installmentId);
+        state.transactions = state.transactions.filter(t => t.installmentId !== transToDelete.installmentId);
+        
+        // Excluir todas do Supabase de forma assíncrona
+        showToast("Excluindo todas as parcelas...");
+        for (const t of installmentsToDelete) {
+          await dbDeleteTransaction(t.id);
+        }
+        
+        saveState();
+        showToast("Todas as parcelas foram excluídas!");
+        if (callback) callback();
+      }
+    });
   } else {
-    state.transactions = state.transactions.filter(t => t.id !== id);
-    dbDeleteTransaction(id);
-    showToast("Transação excluída com sucesso!");
+    showConfirmDeleteModal({
+      title: 'Excluir Transação?',
+      message: `Tem certeza que deseja excluir a transação "${transToDelete.description}" no valor de ${formatCurrency(transToDelete.amount)}?`,
+      onConfirm: () => {
+        state.transactions = state.transactions.filter(t => t.id !== id);
+        dbDeleteTransaction(id);
+        saveState();
+        showToast("Transação excluída com sucesso!");
+        if (callback) callback();
+      }
+    });
   }
-
-  saveState();
-  if (callback) callback();
 }
+
 
 // Deletar transação
 function deleteTransaction(id) {
@@ -2267,26 +2285,44 @@ function renderSettingsCards() {
 }
 
 function deleteCard(id) {
+  const card = state.cards.find(c => c.id === id);
+  const cardName = card ? ` "💳 ${card.name}"` : '';
   const inUse = state.transactions.some(t => t.paymentMethod === id);
+  
   if (inUse) {
-    if (!confirm("Este cartão possui despesas vinculadas. Se você o excluir, essas despesas continuarão registradas, mas perderão a associação com o cartão. Deseja continuar?")) {
-      return;
-    }
-    // Desvincular transações (mudar paymentMethod para 'cash')
-    state.transactions = state.transactions.map(t => {
-      if (t.paymentMethod === id) {
-        return { ...t, paymentMethod: 'cash' };
+    showConfirmDeleteModal({
+      title: 'Excluir Cartão em Uso?',
+      message: `Este cartão${cardName} possui despesas vinculadas. Se você o excluir, essas despesas continuarão registradas, mas perderão a associação com o cartão (serão movidas para dinheiro/saldo). Deseja continuar?`,
+      onConfirm: () => {
+        // Desvincular transações (mudar paymentMethod para 'cash')
+        state.transactions = state.transactions.map(t => {
+          if (t.paymentMethod === id) {
+            return { ...t, paymentMethod: 'cash' };
+          }
+          return t;
+        });
+        executeDeleteCard(id);
       }
-      return t;
+    });
+  } else {
+    showConfirmDeleteModal({
+      title: 'Excluir Cartão de Crédito?',
+      message: `Tem certeza que deseja excluir o cartão${cardName}? Esta ação não pode ser desfeita.`,
+      onConfirm: () => {
+        executeDeleteCard(id);
+      }
     });
   }
+}
 
+function executeDeleteCard(id) {
   state.cards = state.cards.filter(c => c.id !== id);
   saveState();
   dbDeleteCard(id);
   renderSettingsCards();
   showToast("Cartão excluído com sucesso!");
 }
+
 
 // --- Edição de Cartão de Crédito ---
 const cardEditModal = document.getElementById('card-edit-modal');
@@ -2402,18 +2438,28 @@ function deleteCategory(id, type) {
     return;
   }
   
-  state.categories[type] = state.categories[type].filter(c => c.id !== id);
-  
-  // Apagar orçamento se houver
-  if (state.budgets[id]) {
-    delete state.budgets[id];
-  }
-  
-  saveState();
-  dbDeleteCategory(id);
-  renderSettingsCategories();
-  showToast("Categoria excluída!");
+  const cat = state.categories[type].find(c => c.id === id);
+  const catName = cat ? ` "${cat.icon} ${cat.name}"` : '';
+
+  showConfirmDeleteModal({
+    title: 'Excluir Categoria?',
+    message: `Tem certeza que deseja excluir a categoria${catName}? Esta ação não pode ser desfeita e removerá o limite de orçamento associado.`,
+    onConfirm: () => {
+      state.categories[type] = state.categories[type].filter(c => c.id !== id);
+      
+      // Apagar orçamento se houver
+      if (state.budgets[id]) {
+        delete state.budgets[id];
+      }
+      
+      saveState();
+      dbDeleteCategory(id);
+      renderSettingsCategories();
+      showToast("Categoria excluída com sucesso!");
+    }
+  });
 }
+
 
 // Modal Editar Categoria
 const categoryEditModal = document.getElementById('category-edit-modal');
@@ -2660,5 +2706,68 @@ window.addEventListener('DOMContentLoaded', async () => {
         .then(reg => console.log('Service Worker registrado com sucesso:', reg.scope))
         .catch(err => console.error('Erro ao registrar Service Worker:', err));
     });
-  }
 });
+
+// =============================================================
+// SISTEMA PREMIUM DE JANELAS DE CONFIRMAÇÃO DE EXCLUSÃO
+// =============================================================
+
+let deleteConfirmCallback = null;
+let installmentSingleCallback = null;
+let installmentAllCallback = null;
+
+function showConfirmDeleteModal({ title, message, onConfirm }) {
+  const modal = document.getElementById('confirm-delete-modal');
+  const titleEl = document.getElementById('confirm-delete-title');
+  const messageEl = document.getElementById('confirm-delete-message');
+  
+  if (!modal) return;
+  titleEl.textContent = title || 'Excluir Item?';
+  messageEl.textContent = message || 'Tem certeza que deseja excluir este item?';
+  
+  deleteConfirmCallback = onConfirm;
+  modal.classList.add('active');
+}
+
+function closeConfirmDeleteModal() {
+  const modal = document.getElementById('confirm-delete-modal');
+  if (modal) modal.classList.remove('active');
+  deleteConfirmCallback = null;
+}
+
+function showConfirmInstallmentModal({ message, onConfirmSingle, onConfirmAll }) {
+  const modal = document.getElementById('confirm-installment-modal');
+  const messageEl = document.getElementById('confirm-installment-message');
+  
+  if (!modal) return;
+  if (message) messageEl.textContent = message;
+  
+  installmentSingleCallback = onConfirmSingle;
+  installmentAllCallback = onConfirmAll;
+  modal.classList.add('active');
+}
+
+function closeConfirmInstallmentModal() {
+  const modal = document.getElementById('confirm-installment-modal');
+  if (modal) modal.classList.remove('active');
+  installmentSingleCallback = null;
+  installmentAllCallback = null;
+}
+
+// Configurar ouvintes dos modais de confirmação
+document.getElementById('btn-confirm-delete-cancel').addEventListener('click', closeConfirmDeleteModal);
+document.getElementById('btn-confirm-delete-execute').addEventListener('click', () => {
+  if (deleteConfirmCallback) deleteConfirmCallback();
+  closeConfirmDeleteModal();
+});
+
+document.getElementById('btn-confirm-inst-cancel').addEventListener('click', closeConfirmInstallmentModal);
+document.getElementById('btn-confirm-inst-single').addEventListener('click', () => {
+  if (installmentSingleCallback) installmentSingleCallback();
+  closeConfirmInstallmentModal();
+});
+document.getElementById('btn-confirm-inst-all').addEventListener('click', () => {
+  if (installmentAllCallback) installmentAllCallback();
+  closeConfirmInstallmentModal();
+});
+

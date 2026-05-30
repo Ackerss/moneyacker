@@ -1572,4 +1572,21 @@ body {
   color: #ffffff;
 }
 
+/* Estilos de Hover e Foco para Modais de Confirmação Customizadas */
+#btn-confirm-delete-cancel:hover, 
+#btn-confirm-inst-single:hover {
+  background-color: var(--bg-primary) !important;
+  border-color: var(--text-secondary) !important;
+}
+
+#btn-confirm-delete-execute:hover, 
+#btn-confirm-inst-all:hover {
+  filter: brightness(0.9) !important;
+}
+
+#btn-confirm-inst-cancel:hover {
+  color: var(--text-primary) !important;
+}
+
+
 
