@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MoneyAcker - Controle Financeiro Pessoal</title>
+  
+  <!-- Fontes Outfit do Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Biblioteca de Gráficos Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  
+  <!-- Biblioteca de OCR Tesseract.js -->
+  <script src="https://cdn.jsdelivr.net/npm/tesseract.js@5/dist/tesseract.min.js"></script>
+  
+  <!-- Biblioteca do Supabase JS -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- Estilos CSS Externos -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div class="app-container">
+    <!-- 1. Menu Lateral (Sidebar) -->
+    <aside class="sidebar">
+      <div class="sidebar-logo">
+        <svg class="logo-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+          <rect x="2" y="4" width="20" height="16" rx="4" />
+          <line x1="2" y1="10" x2="22" y2="10" />
+          <circle cx="7" cy="15" r="1.5" fill="currentColor" />
+          <circle cx="12" cy="15" r="1" fill="currentColor" />
+          <circle cx="17" cy="15" r="1" fill="currentColor" />
+        </svg>
+        <span class="logo-text">MoneyAcker</span>
+      </div>
+      
+      <nav class="sidebar-nav">
+        <button class="nav-item active" data-tab="dashboard">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="9" rx="1" />
+            <rect x="14" y="3" width="7" height="5" rx="1" />
+            <rect x="14" y="12" width="7" height="9" rx="1" />
+            <rect x="3" y="16" width="7" height="5" rx="1" />
+          </svg>
+          Dashboard
+        </button>
+        
+        <button class="nav-item" data-tab="transactions">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="1" x2="12" y2="23" />
+            <path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6" />
+          </svg>
+          Transações
+        </button>
+        
+        <button class="nav-item" data-tab="budgets">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="10" />
+            <line x1="12" y1="8" x2="12" y2="16" />
+            <line x1="8" y1="12" x2="16" y2="12" />
+          </svg>
+          Orçamentos
+        </button>
+        
+        <button class="nav-item" data-tab="settings">
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="3" />
+            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+          </svg>
+          Configurações
+        </button>
+      </nav>
+      
+      <div class="sidebar-footer">
+        <p class="app-version">Versão 1.0.0</p>
+        <p class="app-copyright">Desenvolvido com carinho</p>
+      </div>
+    </aside>
+    
+    <!-- 2. Área de Conteúdo Principal -->
+    <main class="main-content">
+      <!-- Cabeçalho Superior -->
+      <header class="main-header">
+        <div class="header-info">
+          <h1 id="page-title">Dashboard</h1>
+          <p class="header-subtitle" id="header-date">Carregando data...</p>
+        </div>
+        <div class="header-actions">
+          <button class="btn btn-income" id="open-income-modal">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="btn-icon">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Nova Receita
+          </button>
+          <button class="btn btn-expense" id="open-expense-modal">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" class="btn-icon">
+              <line x1="12" y1="5" x2="12" y2="19"></line>
+              <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            Nova Despesa
+          </button>
+        </div>
+      </header>
+
+      <!-- 3. ABAS DE CONTEÚDO (DASHBOARD, TRANSAÇÕES, ORÇAMENTOS, CONFIGURAÇÕES) -->
+      
+      <!-- ABA 1: DASHBOARD -->
+      <section id="tab-dashboard" class="tab-pane active">
+        <!-- Cards de Resumo -->
+        <div class="summary-cards">
+          <!-- Card Receitas -->
+          <div class="summary-card card-income">
+            <div class="card-header">
+              <span class="card-label">Receitas do Mês</span>
+              <div class="card-icon-container bg-income-light">
+                <svg class="card-icon text-income" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="19" x2="12" y2="5" />
+                  <polyline points="5 12 12 5 19 12" />
+                </svg>
+              </div>
+            </div>
+            <div class="card-body">
+              <h2 class="card-amount" id="dashboard-income">R$ 0,00</h2>
+            </div>
+          </div>
+          
+          <!-- Card Despesas -->
+          <div class="summary-card card-expense">
+            <div class="card-header">
+              <span class="card-label">Despesas do Mês</span>
+              <div class="card-icon-container bg-expense-light">
+                <svg class="card-icon text-expense" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <line x1="12" y1="5" x2="12" y2="19" />
+                  <polyline points="19 12 12 19 5 12" />
+                </svg>
+              </div>
+            </div>
+            <div class="card-body">
+              <h2 class="card-amount" id="dashboard-expense">R$ 0,00</h2>
+            </div>
+          </div>
+          
+          <!-- Card Saldo -->
+          <div class="summary-card card-balance">
+            <div class="card-header">
+              <span class="card-label">Saldo Atual</span>
+              <div class="card-icon-container bg-primary-light" id="balance-icon-bg">
+                <svg class="card-icon text-primary" id="balance-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="12" y1="8" x2="12" y2="16" />
+                  <line x1="8" y1="12" x2="16" y2="12" />
+                </svg>
+              </div>
+            </div>
+            <div class="card-body">
+              <h2 class="card-amount" id="dashboard-balance">R$ 0,00</h2>
+            </div>
+          </div>
+        </div>
+
+        <!-- Painel de Transações Pendentes (MacroDroid) -->
+        <div class="panel pending-panel" id="pending-panel" style="display: none; margin-bottom: 2rem;">
+          <div class="panel-header" style="border-bottom: none; padding-bottom: 0;">
+            <div class="pending-title-group" style="display: flex; align-items: center; gap: 0.75rem;">
+              <span class="pulse-indicator"></span>
+              <h3 style="margin: 0; font-size: 1.15rem;">Aguardando Confirmação (Notificações Celular)</h3>
+            </div>
+            <span class="pending-count-badge" id="pending-count-badge">0 transações</span>
+          </div>
+          <div class="pending-list-container">
+            <ul class="pending-grid" id="pending-transactions-list">
+              <!-- Preenchido via Javascript -->
+            </ul>
+          </div>
+        </div>
+
+        <!-- Conteúdo dos Gráficos e Transações -->
+        <div class="dashboard-grid">
+          <!-- Painel dos Gráficos -->
+          <div class="panel panel-charts">
+            <div class="panel-header">
+              <h3>Gráficos Financeiros</h3>
+            </div>
+            <div class="charts-container">
+              <!-- Rosca -->
+              <div class="chart-wrapper">
+                <h4 class="chart-title">Despesas por Categoria</h4>
+                <div class="canvas-holder">
+                  <canvas id="category-chart"></canvas>
+                </div>
+              </div>
+              <!-- Barras -->
+              <div class="chart-wrapper">
+                <h4 class="chart-title">Evolução Mensal (Fluxo de Caixa)</h4>
+                <div class="canvas-holder">
+                  <canvas id="flow-chart"></canvas>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Últimas Transações -->
+          <div class="panel panel-recent">
+            <div class="panel-header">
+              <h3>Últimas Transações</h3>
+            </div>
+            <div class="recent-list-container">
+              <div class="empty-state" id="recent-empty-state">
+                <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                  <circle cx="12" cy="12" r="10" />
+                  <line x1="8" y1="12" x2="16" y2="12" />
+                </svg>
+                <p>Nenhuma transação cadastrada ainda no mês.</p>
+              </div>
+              <ul class="transaction-list" id="recent-transactions-list">
+                <!-- Preenchido via Javascript -->
+              </ul>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+      <!-- ABA 2: TRANSAÇÕES -->
+      <section id="tab-transactions" class="tab-pane">
+        <div class="panel">
+          <!-- Filtros de Transação -->
+          <div class="transactions-filter-bar">
+            <div class="search-box">
+              <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8" />
+                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+              </svg>
+              <input type="text" id="filter-search" placeholder="Buscar por descrição...">
+            </div>
+            
+            <div class="filter-controls">
+              <select id="filter-type">
+                <option value="all">Todos os Tipos</option>
+                <option value="income">Apenas Receitas</option>
+                <option value="expense">Apenas Despesas</option>
+              </select>
+              
+              <select id="filter-category">
+                <option value="all">Todas as Categorias</option>
+                <!-- Preenchido via Javascript -->
+              </select>
+            </div>
+          </div>
+
+          <div class="table-container">
+            <div class="empty-state" id="full-empty-state">
+              <svg class="empty-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+                <polyline points="14 2 14 8 20 8" />
+                <line x1="16" y1="13" x2="8" y2="13" />
+                <line x1="16" y1="17" x2="8" y2="17" />
+                <polyline points="10 9 9 9 8 9" />
+              </svg>
+              <p>Nenhuma transação encontrada com os filtros selecionados.</p>
+            </div>
+            <table class="transactions-table" id="full-transactions-table">
+              <thead>
+                <tr>
+                  <th>Data</th>
+                  <th>Descrição</th>
+                  <th>Categoria</th>
+                  <th>Valor</th>
+                  <th style="width: 80px; text-align: center;">Ações</th>
+                </tr>
+              </thead>
+              <tbody id="full-transactions-list">
+                <!-- Preenchido via Javascript -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+      
+      <!-- ABA 3: ORÇAMENTOS -->
+      <section id="tab-budgets" class="tab-pane">
+        <div class="panel">
+          <div class="panel-header-budget">
+            <h3>Orçamentos Mensais por Categoria</h3>
+            <p class="budget-desc">Defina limites mensais de gastos para categorias específicas e monitore seu consumo em tempo real.</p>
+          </div>
+          
+          <div class="budgets-grid" id="budgets-grid">
+            <!-- Preenchido via Javascript -->
+          </div>
+        </div>
+      </section>
+      
+      <!-- ABA 4: CONFIGURAÇÕES -->
+      <section id="tab-settings" class="tab-pane">
+        <div class="panel">
+
+          <!-- Seção Supabase -->
+          <div class="settings-section">
+            <h3>Conexão com o Banco de Dados (Supabase)</h3>
+            <p class="section-desc">Conecte o MoneyAcker ao seu banco de dados Supabase para habilitar sincronização em tempo real entre dispositivos e captura automática de notificações via MacroDroid.</p>
+
+            <form class="supabase-config-form" id="supabase-config-form" onsubmit="event.preventDefault();" style="margin-top: 1rem;">
+              <div class="supabase-form-row">
+                <div class="form-group flex-grow">
+                  <label for="supabase-url">URL do Projeto Supabase</label>
+                  <input type="url" id="supabase-url" placeholder="https://xxxxxxxxxxxxxxxxxxxx.supabase.co" required>
+                </div>
+                <div class="form-group flex-grow">
+                  <label for="supabase-key">Chave Anon (Public API Key)</label>
+                  <input type="password" id="supabase-key" placeholder="Cole sua chave anônima aqui..." required>
+                </div>
+              </div>
+              <div class="supabase-status-row">
+                <div class="connection-status disconnected" id="connection-status">
+                  <span class="status-dot"></span>
+                  <span class="status-text" id="connection-status-text">Desconectado (Modo Local Offline)</span>
+                </div>
+                <div class="supabase-buttons">
+                  <button type="button" class="btn btn-primary" id="btn-save-supabase">Conectar Banco</button>
+                  <button type="button" class="btn btn-secondary" id="btn-disconnect-supabase" style="display: none;">Desconectar</button>
+                </div>
+              </div>
+            </form>
+          </div>
+
+          <hr class="settings-divider">
+
+          <div class="settings-section">
+            <h3>Gerenciamento de Categorias</h3>
+            <p class="section-desc">Personalize as categorias disponíveis para suas receitas e despesas.</p>
+            
+            <div class="categories-config-container">
+              <div class="add-category-form">
+                <input type="text" id="new-category-name" placeholder="Nova Categoria (Ex: Pet)">
+                <select id="new-category-type">
+                  <option value="expense">Tipo: Despesa</option>
+                  <option value="income">Tipo: Receita</option>
+                </select>
+                <button class="btn btn-primary" id="btn-add-category">Adicionar</button>
+              </div>
+              
+              <ul class="categories-list" id="config-categories-list">
+                <!-- Preenchido via Javascript -->
+              </ul>
+            </div>
+          </div>
+          
+          <hr class="settings-divider">
+          
+          <div class="settings-section">
+            <h3>Meus Cartões de Crédito</h3>
+            <p class="section-desc">Cadastre e gerencie seus cartões de crédito para controle de faturas e parcelamentos.</p>
+            
+            <div class="cards-config-container">
+              <form class="add-card-form" id="add-card-form" onsubmit="event.preventDefault();">
+                <div class="form-group">
+                  <label for="new-card-name">Nome do Cartão</label>
+                  <input type="text" id="new-card-name" placeholder="Ex: Nubank" required>
+                </div>
+                <div class="form-group">
+                  <label for="new-card-limit">Limite (R$)</label>
+                  <input type="text" id="new-card-limit" placeholder="0,00" inputmode="numeric" required>
+                </div>
+                <div class="form-group">
+                  <label for="new-card-closing">Dia Fechamento</label>
+                  <input type="number" id="new-card-closing" min="1" max="31" placeholder="Ex: 28" required>
+                </div>
+                <div class="form-group">
+                  <label for="new-card-due">Dia Vencimento</label>
+                  <input type="number" id="new-card-due" min="1" max="31" placeholder="Ex: 5" required>
+                </div>
+                <div class="form-group">
+                  <label for="new-card-color">Cor</label>
+                  <input type="color" id="new-card-color" value="#8a05be" style="padding:0.2rem; height:42px;">
+                </div>
+                <button class="btn btn-primary" id="btn-add-card">Adicionar</button>
+              </form>
+              
+              <ul class="cards-list" id="config-cards-list">
+                <!-- Preenchido via Javascript -->
+              </ul>
+            </div>
+          </div>
+
+          <hr class="settings-divider">
+          
+          <div class="settings-section">
+            <h3 class="danger-title">Limpeza e Segurança</h3>
+            <p class="section-desc">Apague permanentemente todos os registros salvos neste navegador para iniciar do zero.</p>
+            
+            <button class="btn btn-danger" id="btn-reset-data">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                <line x1="10" y1="11" x2="10" y2="17"></line>
+                <line x1="14" y1="11" x2="14" y2="17"></line>
+              </svg>
+              Limpar Todos os Dados
+            </button>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- 4. MODAL: ADICIONAR / EDITAR TRANSAÇÃO -->
+  <div class="modal-overlay" id="transaction-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3 id="modal-title">Nova Transação</h3>
+        <button class="btn-close-modal" id="btn-close-transaction-modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <form class="modal-form" id="transaction-form">
+        <!-- Campos Ocultos -->
+        <input type="hidden" id="trans-type" value="expense">
+        <input type="hidden" id="trans-id" value="">
+        
+        <div class="form-group">
+          <label for="trans-amount">Valor (R$)</label>
+          <div class="amount-input-row">
+            <input type="text" id="trans-amount" placeholder="0,00" inputmode="numeric" required>
+            <button type="button" class="btn btn-ocr" id="btn-scan-ocr">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="btn-icon">
+                <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path>
+                <circle cx="12" cy="13" r="4"></circle>
+              </svg>
+              Escanear
+            </button>
+          </div>
+          <input type="file" id="ocr-file-input" accept="image/*" capture="environment" style="display: none;">
+        </div>
+        
+        <!-- Status de Processamento do Scanner -->
+        <div class="ocr-loader" id="ocr-loader" style="display: none;">
+          <div class="ocr-spinner"></div>
+          <span>Lendo cupom fiscal... <strong id="ocr-progress">0%</strong></span>
+        </div>
+        
+        <div class="form-group">
+          <label for="trans-description">Descrição</label>
+          <input type="text" id="trans-description" placeholder="Ex: Mercado do Mês" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="trans-date">Data</label>
+          <input type="date" id="trans-date" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="trans-category">Categoria</label>
+          <select id="trans-category" required>
+            <!-- Preenchido via Javascript -->
+          </select>
+        </div>
+        
+        <!-- Forma de Pagamento e Parcelas (Apenas para despesas) -->
+        <div class="payment-installment-container" id="payment-installment-container" style="display: none;">
+          <div class="payment-row">
+            <div class="form-group">
+              <label for="trans-payment-method">Forma de Pagamento</label>
+              <select id="trans-payment-method">
+                <option value="cash">Saldo da Conta / Dinheiro</option>
+                <!-- Cartões serão inseridos via JS -->
+              </select>
+            </div>
+            <div class="form-group" id="installment-select-group" style="display: none;">
+              <label for="trans-installments">Parcelas</label>
+              <select id="trans-installments">
+                <option value="1">1x (À vista)</option>
+                <option value="2">2x</option>
+                <option value="3">3x</option>
+                <option value="4">4x</option>
+                <option value="5">5x</option>
+                <option value="6">6x</option>
+                <option value="7">7x</option>
+                <option value="8">8x</option>
+                <option value="9">9x</option>
+                <option value="10">10x</option>
+                <option value="11">11x</option>
+                <option value="12">12x</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-transaction">Cancelar</button>
+          <button type="submit" class="btn btn-primary" id="btn-save-transaction">Salvar Transação</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 5. MODAL: CONFIGURAR LIMITE DE ORÇAMENTO -->
+  <div class="modal-overlay" id="budget-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Definir Limite de Orçamento</h3>
+        <button class="btn-close-modal" id="btn-close-budget-modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <form class="modal-form" id="budget-form">
+        <input type="hidden" id="budget-category" value="">
+        
+        <div class="form-group">
+          <label>Categoria</label>
+          <p id="budget-category-display" class="highlight-category-name">Categoria</p>
+        </div>
+        
+        <div class="form-group">
+          <label for="budget-limit">Limite Mensal (R$)</label>
+          <input type="text" id="budget-limit" placeholder="0,00" inputmode="numeric" required>
+          <span class="input-helper">Defina 0,00 para remover o limite e orçamento da categoria.</span>
+        </div>
+        
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-budget">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar Limite</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- 6. MODAL: EDITAR CATEGORIA -->
+  <div class="modal-overlay" id="category-edit-modal">
+    <div class="modal">
+      <div class="modal-header">
+        <h3>Editar Categoria</h3>
+        <button class="btn-close-modal" id="btn-close-category-edit-modal">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
+      </div>
+      <form class="modal-form" id="category-edit-form">
+        <input type="hidden" id="edit-cat-id" value="">
+        <input type="hidden" id="edit-cat-type" value="">
+        
+        <div class="form-group">
+          <label for="edit-cat-name">Nome da Categoria</label>
+          <input type="text" id="edit-cat-name" placeholder="Ex: Pet - Pipoca" required>
+        </div>
+        
+        <div class="form-group">
+          <label for="edit-cat-icon-select">Escolha um Ícone Legal</label>
+          <select id="edit-cat-icon-select">
+            <option value="🐶">🐶 Cachorro / Pet</option>
+            <option value="🐱">🐱 Gato / Pet</option>
+            <option value="🍿">🍿 Cinema / Pipoca</option>
+            <option value="🍔">🍔 Alimentação</option>
+            <option value="🍕">🍕 Pizza</option>
+            <option value="🍺">🍺 Bebidas / Lazer</option>
+            <option value="🏠">🏠 Moradia</option>
+            <option value="🚗">🚗 Transporte</option>
+            <option value="✈️">✈️ Viagens</option>
+            <option value="🎮">🎮 Jogos / Lazer</option>
+            <option value="🛍️">🛍️ Compras</option>
+            <option value="💊">💊 Farmácia / Saúde</option>
+            <option value="❤️">❤️ Saúde / Amor</option>
+            <option value="📚">📚 Livros / Educação</option>
+            <option value="💼">💼 Trabalho / Salário</option>
+            <option value="📈">📈 Investimentos</option>
+            <option value="💰">💰 Dinheiro / Renda</option>
+            <option value="🎁">🎁 Presentes</option>
+            <option value="💈">💈 Barba / Cabelo</option>
+            <option value="💪">💪 Academia / Esportes</option>
+            <option value="⚙️">⚙️ Outros</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="edit-cat-icon-custom">Ou digite um ícone/emoji personalizado</label>
+          <input type="text" id="edit-cat-icon-custom" placeholder="Ex: 🐱 (Deixe em branco para usar o selecionado acima)">
+        </div>
+
+        <div class="form-group">
+          <label for="edit-cat-color">Cor de Destaque</label>
+          <input type="color" id="edit-cat-color" value="#4f46e5">
+        </div>
+        
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" id="btn-cancel-category-edit">Cancelar</button>
+          <button type="submit" class="btn btn-primary">Salvar Alterações</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Notificação Toast (Aviso flutuante de Sucesso / Erro) -->
+  <div class="toast" id="toast">
+    <span id="toast-message">Mensagem</span>
+  </div>
+
+  <!-- Scripts JavaScript -->
+  <script src="app.js"></script>
+</body>
+</html>
