@@ -127,6 +127,58 @@ function updateConnectionStatus(status, text) {
   statusTextEl.textContent = text;
 }
 
+// Popular dados fictícios de exemplo e cartões no banco do Supabase caso esteja completamente vazio
+async function initializeSupabaseMockData() {
+  if (!supabaseClient) return;
+
+  try {
+    const today = new Date();
+    const currentMonthStr = today.toISOString().substring(0, 7);
+
+    // 1. Cartões de crédito padrão
+    const defaultCards = [
+      { id: 'card-1', name: 'Nubank Roxinho', limit_amount: 3000.00, closing_day: 28, due_day: 5, color: '#8a05be' },
+      { id: 'card-2', name: 'Visa Platinum', limit_amount: 8000.00, closing_day: 10, due_day: 17, color: '#0f172a' }
+    ];
+
+    for (const card of defaultCards) {
+      await supabaseClient.from('cards').insert(card);
+    }
+
+    // 2. Orçamentos padrão
+    const defaultBudgets = [
+      { category_id: 'cat-alimentacao', limit_amount: 600 },
+      { category_id: 'cat-lazer', limit_amount: 300 },
+      { category_id: 'cat-moradia', limit_amount: 1500 },
+      { category_id: 'cat-pet', limit_amount: 250 }
+    ];
+
+    for (const budget of defaultBudgets) {
+      await supabaseClient.from('budgets').insert(budget);
+    }
+
+    // 3. Transações de exemplo
+    const defaultTransactions = [
+      { id: 'mock-1', amount: 3500.00, description: 'Salário Mensal', date: `${currentMonthStr}-05`, category: 'cat-salario', type: 'income', payment_method: 'cash', status: 'confirmed' },
+      { id: 'mock-2', amount: 1200.00, description: 'Aluguel do Apartamento', date: `${currentMonthStr}-10`, category: 'cat-moradia', type: 'expense', payment_method: 'cash', status: 'confirmed' },
+      { id: 'mock-3', amount: 320.50, description: 'Supermercado Mensal', date: `${currentMonthStr}-12`, category: 'cat-alimentacao', type: 'expense', payment_method: 'cash', status: 'confirmed' },
+      { id: 'mock-4', amount: 150.00, description: 'Combustível Carro', date: `${currentMonthStr}-15`, category: 'cat-transporte', type: 'expense', payment_method: 'cash', status: 'confirmed' },
+      { id: 'mock-5', amount: 450.00, description: 'Rendimento Dividendos', date: `${currentMonthStr}-20`, category: 'cat-investimentos', type: 'income', payment_method: 'cash', status: 'confirmed' },
+      { id: 'mock-6', amount: 180.00, description: 'Jantar com Amigos', date: `${currentMonthStr}-22`, category: 'cat-lazer', type: 'expense', payment_method: 'cash', status: 'confirmed' },
+      { id: 'mock-8', amount: 120.00, description: 'Ração e Petiscos', date: `${currentMonthStr}-18`, category: 'cat-pet', type: 'expense', payment_method: 'cash', status: 'confirmed' },
+      { id: 'mock-7', amount: 85.00, description: 'Farmácia', date: `${currentMonthStr}-25`, category: 'cat-saude', type: 'expense', payment_method: 'cash', status: 'confirmed' }
+    ];
+
+    for (const trans of defaultTransactions) {
+      await supabaseClient.from('transactions').insert(trans);
+    }
+
+    console.log("Mock data inicial inserido com sucesso no Supabase!");
+  } catch (err) {
+    console.error("Erro ao inicializar dados de exemplo no Supabase:", err);
+  }
+}
+
 // Carregar dados de forma relacional do Supabase
 async function loadStateFromSupabase() {
   if (!supabaseClient) return;
@@ -159,6 +211,23 @@ async function loadStateFromSupabase() {
     // 2. Cartões
     const { data: dbCards, error: cardError } = await supabaseClient.from('cards').select('*');
     if (cardError) throw cardError;
+    
+    // 3. Orçamentos
+    const { data: dbBudgets, error: budgetError } = await supabaseClient.from('budgets').select('*');
+    if (budgetError) throw budgetError;
+    
+    // 4. Transações
+    const { data: dbTransactions, error: transError } = await supabaseClient.from('transactions').select('*');
+    if (transError) throw transError;
+
+    // Se estiver tudo vazio no Supabase, popular com os exemplos padrão automaticamente
+    if ((!dbCards || dbCards.length === 0) && (!dbTransactions || dbTransactions.length === 0)) {
+      console.log("Supabase vazio! Populando com dados de exemplo...");
+      await initializeSupabaseMockData();
+      await loadStateFromSupabase();
+      return;
+    }
+
     state.cards = dbCards ? dbCards.map(c => ({
       id: c.id,
       name: c.name,
@@ -168,9 +237,6 @@ async function loadStateFromSupabase() {
       color: c.color
     })) : [];
     
-    // 3. Orçamentos
-    const { data: dbBudgets, error: budgetError } = await supabaseClient.from('budgets').select('*');
-    if (budgetError) throw budgetError;
     state.budgets = {};
     if (dbBudgets) {
       dbBudgets.forEach(b => {
@@ -178,9 +244,6 @@ async function loadStateFromSupabase() {
       });
     }
     
-    // 4. Transações
-    const { data: dbTransactions, error: transError } = await supabaseClient.from('transactions').select('*');
-    if (transError) throw transError;
     state.transactions = dbTransactions ? dbTransactions.map(t => ({
       id: t.id,
       amount: parseFloat(t.amount),
