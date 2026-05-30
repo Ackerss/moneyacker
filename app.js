@@ -38,14 +38,17 @@ let categoryChartInstance = null;
 let flowChartInstance = null;
 
 // 4. Inicialização & Persistência de Dados (Supabase + Local Storage Cache)
+const DEFAULT_SUPABASE_URL = 'https://gqqjxhfqlbflfrpjnojt.supabase.co';
+const DEFAULT_SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdxcWp4aGZxbGJmbGZycGpub2p0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwOTE5OTgsImV4cCI6MjA5NTY2Nzk5OH0._QSbapoTPdRP4_Un3M5-hICi3gwoSlJRUpjP4dXhJ0Y';
+
 let supabaseClient = null;
 const isSupabaseDisabled = localStorage.getItem('moneyacker_supabase_disabled') === 'true';
 let supabaseUrl = '';
 let supabaseKey = '';
 
 if (!isSupabaseDisabled) {
-  supabaseUrl = localStorage.getItem('moneyacker_supabase_url') || 'https://gqqjxhfqlbflfrpjnojt.supabase.co';
-  supabaseKey = localStorage.getItem('moneyacker_supabase_key') || 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdxcWp4aGZxbGJmbGZycGpub2p0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwOTE5OTgsImV4cCI6MjA5NTY2Nzk5OH0._QSbapoTPdRP4_Un3M5-hICi3gwoSlJRUpjP4dXhJ0Y';
+  supabaseUrl = localStorage.getItem('moneyacker_supabase_url') || DEFAULT_SUPABASE_URL;
+  supabaseKey = localStorage.getItem('moneyacker_supabase_key') || DEFAULT_SUPABASE_KEY;
 }
 
 function loadState() {
@@ -2355,8 +2358,9 @@ window.addEventListener('DOMContentLoaded', async () => {
         supabaseKey = '';
         supabaseClient = null;
 
-        document.getElementById('supabase-url').value = '';
-        document.getElementById('supabase-key').value = '';
+        // Visualmente voltar para as credenciais padrão de fábrica
+        document.getElementById('supabase-url').value = DEFAULT_SUPABASE_URL;
+        document.getElementById('supabase-key').value = DEFAULT_SUPABASE_KEY;
 
         updateConnectionStatus('disconnected', 'Desconectado (Modo Local Offline)');
         btnDisconnectSupabase.style.display = 'none';
@@ -2393,6 +2397,12 @@ window.addEventListener('DOMContentLoaded', async () => {
   setupMoneyMask(document.getElementById('trans-amount'));
   setupMoneyMask(document.getElementById('budget-limit'));
   
+  // Preencher inputs com valores ativos ou padrões de fábrica visualmente na inicialização
+  const inputUrl = document.getElementById('supabase-url');
+  const inputKey = document.getElementById('supabase-key');
+  if (inputUrl) inputUrl.value = localStorage.getItem('moneyacker_supabase_url') || DEFAULT_SUPABASE_URL;
+  if (inputKey) inputKey.value = localStorage.getItem('moneyacker_supabase_key') || DEFAULT_SUPABASE_KEY;
+
   // Tentar conectar ao Supabase (se credenciais estiverem salvas e conexão ativa)
   if (!isSupabaseDisabled) {
     await initSupabase();
