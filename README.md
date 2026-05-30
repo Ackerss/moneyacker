@@ -30,20 +30,19 @@ A macro do celular vai capturar as compras do seu cartão e Pix e enviar direto 
 1. Instale o **MacroDroid** no seu celular Android.
 2. Siga as instruções passo a passo detalhadas no arquivo [MACRODROID_SETUP.md](file:///c:/Users/User/Meu%20Drive/ANTIGRAVITY/MONEYACKER/MACRODROID_SETUP.md) para criar o gatilho, as ações de limpeza do valor e a requisição HTTP POST apontando para o seu Supabase.
 
-### Passo 3: Hospedar o Site de Graça (Netlify)
-Você quer acessar o site de qualquer lugar do mundo (no computador, tablet e celular). A hospedagem é feita de forma visual sem comandos:
-1. Acesse o site do [Netlify](https://www.netlify.com) e crie uma conta gratuita.
-2. Acesse a aba **Sites** e clique na opção **Deploy manually** (ou acesse [app.netlify.com/drop](https://app.netlify.com/drop)).
-3. **Arraste e solte** a pasta `MONEYACKER` do seu computador (contendo os arquivos `index.html`, `style.css`, `app.js`) na área pontilhada da página web do Netlify.
-4. Aguarde alguns segundos. O Netlify gerará um link público de graça (Ex: `https://moneyacker-finance.netlify.app`). 
-5. *(Opcional)* Nas configurações do site no Netlify, você pode alterar o nome do subdomínio para algo de sua preferência.
+### Passo 3: Hospedar o Site e Acessar (Vercel)
+O projeto já está configurado, hospedado e online na nuvem do Vercel!
+* **Link de Acesso Principal:** [https://moneyacker.vercel.app/](https://moneyacker.vercel.app/)
+* **Painel do Vercel (Gerenciamento):** [https://vercel.com/ackers-projects-831a23c7/moneyacker](https://vercel.com/ackers-projects-831a23c7/moneyacker)
+
+Como o repositório privado do GitHub (`Ackerss/moneyacker`) está integrado diretamente ao Vercel, qualquer alteração ou melhoria que você commitar (ou que uma IA fizer) na branch `main` será compilada e atualizada no site de forma 100% automática em segundos.
 
 ---
 
 ## 👥 Uso Compartilhado: Jacson & Ana
 
 Para que vocês dois compartilhem as mesmas informações e vejam as atualizações em tempo real:
-1. Abra o link gerado pelo Netlify em qualquer dispositivo (seu celular S25, o laptop, o celular da Ana).
+1. Abra o link do aplicativo [https://moneyacker.vercel.app/](https://moneyacker.vercel.app/) em qualquer dispositivo (seu celular S25, o laptop, o celular da Ana).
 2. Vá até a aba **Configurações**.
 3. Na seção **Conexão com o Banco de Dados (Supabase)**, cole:
    * **URL do Projeto Supabase:** `https://xxxxxxxxxxxxxxxxxxxx.supabase.co`

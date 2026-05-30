@@ -1,0 +1,10 @@
+🔑 Seus Dados de Acesso (Copie e use no MoneyAcker e MacroDroid):
+URL do Projeto:
+
+https://gqqjxhfqlbflfrpjnojt.supabase.co
+
+--
+
+Chave Anon (Public API Key):
+
+eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImdxcWp4aGZxbGJmbGZycGpub2p0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAwOTE5OTgsImV4cCI6MjA5NTY2Nzk5OH0._QSbapoTPdRP4_Un3M5-hICi3gwoSlJRUpjP4dXhJ0Y
