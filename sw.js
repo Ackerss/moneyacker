@@ -1,11 +1,11 @@
-const CACHE_NAME = 'moneyacker-cache-v6';
+const CACHE_NAME = 'moneyacker-cache-v7';
 const ASSETS_TO_CACHE = [
   '/',
   'index.html',
   'style.css',
   'app.js',
   'manifest.json',
-  'icon.svg',
+  'icon.png',
   'https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap',
   'https://cdn.jsdelivr.net/npm/chart.js',
   'https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2'
