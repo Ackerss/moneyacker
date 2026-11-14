@@ -379,7 +379,7 @@ function salvarOrcamentos_(orc) {
 function gemini_(parts) {
   const key = props_().getProperty('GEMINI_API_KEY');
   if (!key) throw new Error('Chave do Gemini não configurada (menu 💰 Financeiro > Definir chave do Gemini)');
-  const model = props_().getProperty('GEMINI_MODEL') || 'gemini-flash-latest';
+  const model = props_().getProperty('GEMINI_MODEL') || 'gemini-3.1-flash-lite';
   const url = 'https://generativelanguage.googleapis.com/v1beta/models/' + model + ':generateContent?key=' + encodeURIComponent(key);
   const payload = { contents: [{ parts: parts }], generationConfig: { responseMimeType: 'application/json', temperature: 0.1 } };
   const resp = UrlFetchApp.fetch(url, { method: 'post', contentType: 'application/json', payload: JSON.stringify(payload), muteHttpExceptions: true });

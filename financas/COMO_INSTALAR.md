@@ -1,5 +1,7 @@
 # Finanças Acker: o que já está pronto e o que falta
 
+> Para IAs e para o estado atual do projeto, veja `LEIA_PRIMEIRO_IA.md`.
+
 ## ✅ Já feito (14/11/2026)
 - Planilha **Finanças Acker** criada no seu Google Drive, com as abas Lancamentos, Categorias, Contas, Regras e Log.
 - Script **Finanças Acker API** colado, autorizado e publicado como App da Web.
@@ -14,7 +16,7 @@
 
 ## 2) IA para foto e categorização: Gemini (2 min)
 1. Abra **https://aistudio.google.com/apikey** → *Criar chave de API* (escolha o projeto com os créditos).
-2. Na planilha: **💰 Financeiro → Definir chave do Gemini** → cole → **Testar Gemini**.
+2. Na planilha: **💰 Financeiro → Definir chave do Gemini** → cole → **Testar Gemini**. (Já feito. Modelo em uso: `gemini-3.1-flash-lite`; para trocar, mude a propriedade `GEMINI_MODEL` no script.)
 
 ## 3) Bancos e cartões automáticos: Pluggy (3 min)
 Você precisa de **Client ID**, **Client Secret** e dos **Item IDs** (um por banco conectado).

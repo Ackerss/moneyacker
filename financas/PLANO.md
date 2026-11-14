@@ -31,7 +31,7 @@ Os dados ficam numa **Planilha Google** (que vocês conseguem abrir e conferir q
 
 **IA: Gemini (créditos Google) no servidor, não no celular**
 - A chave fica escondida dentro da planilha, nunca no app.
-- É usado só para ler foto e categorizar o que as regras não reconhecem. Leitura de cupom no Gemini Flash custa frações de centavo. Com os créditos de vocês, isso dura anos.
+- É usado só para ler foto e categorizar o que as regras não reconhecem. Modelo em uso: `gemini-3.1-flash-lite` (estável, o mais barato com preço oficial; detalhes e tabela de preços em `LEIA_PRIMEIRO_IA.md`). Leitura de cupom custa frações de centavo. Com os créditos de vocês, isso dura anos.
 - **O app aprende:** quando vocês mudam a categoria de "POSTO TIO JOCA" para Transporte, ele cria uma regra e nas próximas vezes nem chama a IA.
 
 **Pluggy direto da planilha (e não pelo bot)**
