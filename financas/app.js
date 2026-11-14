@@ -1,7 +1,8 @@
 'use strict';
 /* Finanças Acker — app (PWA). Lê/grava na planilha via Google Apps Script. */
 
-const VERSAO = '1.0.0';
+const VERSAO = '1.0.1';
+const API_PADRAO = 'https://script.google.com/macros/s/AKfycbz2BC-qgvF3MRE5YEuhYv9oiQgpK3B1MURX1oAN4p42mt6wJGxdNwQHN77GiCya22Ek/exec';
 const LS = {
   get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
   set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) { /* sem storage */ } }
@@ -25,7 +26,7 @@ const CATS_PADRAO = [
 const SECOES_PADRAO = { cat: true, orc: true, contas: true, evo: true, quem: false, top: false, ult: true };
 
 const S = {
-  cfg: LS.get('fa_cfg', { url: '', token: '', quem: '' }),
+  cfg: Object.assign({ url: '', token: '', quem: '' }, LS.get('fa_cfg', {})),
   tema: LS.get('fa_tema', 'auto'),
   abertas: Object.assign({}, SECOES_PADRAO, LS.get('fa_secoes', {})),
   d: { lancamentos: [], categorias: [], contas: [], pessoas: ['Jacson', 'Ana'] },
@@ -37,6 +38,8 @@ const S = {
   charts: {},
   form: null
 };
+
+if (!S.cfg.url) S.cfg.url = API_PADRAO;
 
 /* ============================== util ============================== */
 const $ = (s, el = document) => el.querySelector(s);
@@ -558,7 +561,7 @@ function renderAjustes() {
   $('#ajustes').innerHTML = `
   <div class="aj-card">
     <h4>Conexão com a planilha</h4>
-    <p>Cole o endereço do App da Web (Apps Script) e o token. Isso fica salvo só neste aparelho.</p>
+    <p>Cole o <b>token</b> (na planilha: menu 💰 Financeiro → Ver token de acesso). O endereço já vem preenchido. Fica salvo só neste aparelho.</p>
     <label class="field"><span>Endereço do App da Web</span><input id="ajUrl" value="${esc(c.url)}" placeholder="https://script.google.com/macros/s/…/exec" autocomplete="off"></label>
     <label class="field"><span>Token</span><input id="ajToken" value="${esc(c.token)}" placeholder="token mostrado na planilha" autocomplete="off"></label>
     <div class="field"><span>Quem usa este aparelho</span><div class="seg full" id="ajQuem">${S.d.pessoas.map(p => `<button data-v="${esc(p)}" class="${p === c.quem ? 'active' : ''}">${esc(p)}</button>`).join('')}</div></div>

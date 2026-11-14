@@ -23,11 +23,11 @@ Os dados ficam numa **Planilha Google** (que vocês conseguem abrir e conferir q
 - Dá para abrir a planilha, corrigir ou filtrar à mão, e exportar quando quiser.
 - Aguenta tranquilamente dezenas de milhares de lançamentos (10 anos de uso).
 
-**Front-end: app web instalável (PWA) no Netlify**
+**Front-end: app web instalável (PWA) no Vercel**
 - Abre como app pela tela inicial do celular (Android e iPhone), e no PC é só abrir o link.
 - No celular é uma coluna com seções recolhíveis; no PC vira um painel em duas colunas.
 - Modo claro e escuro, funciona offline (o que for lançado sem internet é enviado depois).
-- Hospedado no Netlify grátis, igual ao catálogo.
+- Hospedado grátis no Vercel que você já usava no MoneyAcker: **https://moneyacker.vercel.app/financas/**. Cada atualização no GitHub entra no ar sozinha.
 
 **IA: Gemini (créditos Google) no servidor, não no celular**
 - A chave fica escondida dentro da planilha, nunca no app.
@@ -39,6 +39,17 @@ Os dados ficam numa **Planilha Google** (que vocês conseguem abrir e conferir q
 - Ele evita duplicados (cada transação tem um id único), ignora as pendentes, marca **pagamento de fatura como transferência** (para não contar a compra duas vezes) e pega parcelas ("3/10").
 - Também puxa **saldo das contas e fatura atual dos cartões** para o painel.
 - Se não der para usar as credenciais direto, o plano B é o bot mandar as transações do Pluggy para o mesmo endereço (já está suportado, com proteção contra duplicados).
+
+## Reavaliação: por que Google Sheets e não outro banco
+
+| Opção | Custo | Velocidade | Manutenção | Ver/corrigir dados à mão | Veredito |
+|---|---|---|---|---|---|
+| **Google Sheets + Apps Script** | Grátis | 1 a 3 s por chamada (o app esconde isso com cache) | Nenhuma | Sim, é uma planilha | **Escolhido** |
+| Supabase (o que o MoneyAcker usava) | Grátis | Rápido, tempo real | O plano grátis **pausa após 7 dias sem uso** e exige reativar à mão | Painel técnico | Foi justamente o que travou antes |
+| Firebase | Grátis até certo uso, mas as funções de servidor exigem cartão (plano Blaze) | Rápido, tempo real | Deploy por linha de comando | Painel técnico | Complexo demais para o ganho |
+| Planilha só no celular (sem app) | Grátis | — | — | Sim | Feio e cansativo, é o que vocês não querem |
+
+Para 2 pessoas e algumas centenas de lançamentos por mês, a velocidade do Sheets não faz diferença na prática. O que pesa é: **custo zero, nada para manter e dados sempre à vista.**
 
 ## O que o painel mostra (seções recolhíveis)
 

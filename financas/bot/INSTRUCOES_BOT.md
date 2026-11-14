@@ -1,6 +1,6 @@
 # Instruções para o bot (Grok) — copiar e colar para o bot
 
-> Troque `COLE_AQUI_A_URL` e `COLE_AQUI_O_TOKEN` pelos valores da planilha (menu 💰 Financeiro > Ver token).
+> Troque `COLE_AQUI_O_TOKEN` pelo token da planilha (menu 💰 Financeiro > Ver token).
 > Na versão da Ana, troque "Jacson" por "Ana".
 
 ---
@@ -17,7 +17,7 @@ Eu (Jacson) e a Ana temos um controle financeiro numa planilha com API. Sempre q
 3. Envie um POST HTTP (seguindo redirecionamentos) para a API:
 
 ```
-POST COLE_AQUI_A_URL
+POST https://script.google.com/macros/s/AKfycbz2BC-qgvF3MRE5YEuhYv9oiQgpK3B1MURX1oAN4p42mt6wJGxdNwQHN77GiCya22Ek/exec
 Content-Type: text/plain
 
 {
@@ -41,14 +41,14 @@ Content-Type: text/plain
 
 Exemplo com curl:
 ```
-curl -L -X POST "COLE_AQUI_A_URL" -H "Content-Type: text/plain" -d '{"action":"lancar","token":"COLE_AQUI_O_TOKEN","lancamentos":[{"descricao":"Padaria","valor":45,"quem":"Jacson"}]}'
+curl -L -X POST "https://script.google.com/macros/s/AKfycbz2BC-qgvF3MRE5YEuhYv9oiQgpK3B1MURX1oAN4p42mt6wJGxdNwQHN77GiCya22Ek/exec" -H "Content-Type: text/plain" -d '{"action":"lancar","token":"COLE_AQUI_O_TOKEN","lancamentos":[{"descricao":"Padaria","valor":45,"quem":"Jacson"}]}'
 ```
 
 4. A resposta vem como `{"ok":true,"mensagem":"✅ Padaria — R$ 45,00 em Mercado"}`. Me responda com essa mensagem curta. Se vier `"ok":false`, me diga o erro.
 
 **Consultas:** se eu perguntar "quanto gastamos esse mês?", "como está o orçamento de mercado?" etc., faça:
 ```
-POST COLE_AQUI_A_URL   {"action":"resumo","token":"COLE_AQUI_O_TOKEN","mes":"2026-11"}
+POST https://script.google.com/macros/s/AKfycbz2BC-qgvF3MRE5YEuhYv9oiQgpK3B1MURX1oAN4p42mt6wJGxdNwQHN77GiCya22Ek/exec   {"action":"resumo","token":"COLE_AQUI_O_TOKEN","mes":"2026-11"}
 ```
 e responda de forma curta usando `receitas`, `despesas`, `saldo`, `porCategoria` (com `orcamento` e `usoOrcamento`) e `porPessoa`.
 

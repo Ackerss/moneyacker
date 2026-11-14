@@ -84,12 +84,12 @@ function configurar() {
   const padrao = ss.getSheetByName('Página1') || ss.getSheetByName('Sheet1');
   if (padrao && padrao.getLastRow() === 0 && ss.getSheets().length > 1) ss.deleteSheet(padrao);
   log_('configurar', 'ok');
-  SpreadsheetApp.getUi().alert('✅ Planilha configurada!\n\nSeu TOKEN de acesso (copie):\n\n' + p.getProperty('APP_TOKEN') +
+  aviso_('✅ Planilha configurada!\n\nSeu TOKEN de acesso (copie):\n\n' + p.getProperty('APP_TOKEN') +
     '\n\nPróximo passo: Implantar > Nova implantação > App da Web\n(Executar como: Eu | Quem pode acessar: Qualquer pessoa).');
 }
 
 function mostrarToken() {
-  SpreadsheetApp.getUi().alert('Token de acesso:\n\n' + (props_().getProperty('APP_TOKEN') || '(rode "Configurar planilha" primeiro)'));
+  aviso_('Token de acesso:\n\n' + (props_().getProperty('APP_TOKEN') || '(rode "Configurar planilha" primeiro)'));
 }
 
 function definirGemini() {
@@ -585,6 +585,7 @@ function brl_(v) {
   const [i, d] = Math.abs(Number(v) || 0).toFixed(2).split('.');
   return 'R$ ' + i.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ',' + d;
 }
+function aviso_(m) { try { SpreadsheetApp.getUi().alert(m); } catch (e) { Logger.log(m); } }
 function props_() { return PropertiesService.getScriptProperties(); }
 function aba_(n) { const s = SpreadsheetApp.getActive().getSheetByName(n); if (!s) throw new Error('Aba "' + n + '" não existe. Rode "Configurar planilha".'); return s; }
 function tz_() { return SpreadsheetApp.getActive().getSpreadsheetTimeZone() || 'America/Sao_Paulo'; }
