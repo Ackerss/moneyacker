@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Finanças Acker</title>
+  <meta name="description" content="Controle financeiro do casal: dashboard, lançamentos e orçamentos.">
+  <meta name="theme-color" content="#4f46e5">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Finanças">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js" defer></script>
+  <script type="module" src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.esm.js"></script>
+  <script nomodule src="https://unpkg.com/ionicons@7.1.0/dist/ionicons/ionicons.js"></script>
+</head>
+<body>
+  <header class="top">
+    <div class="top-row wrap">
+      <div class="brand">
+        <div class="brand-logo"><ion-icon name="wallet"></ion-icon></div>
+        <div>
+          <div class="brand-name">Finanças Acker</div>
+          <div class="brand-sub" id="statusLinha">carregando…</div>
+        </div>
+      </div>
+      <nav class="tabs-desk" id="tabsDesk">
+        <button data-tab="painel" class="active">Painel</button>
+        <button data-tab="lanc">Lançamentos</button>
+        <button data-tab="ajustes">Ajustes</button>
+      </nav>
+      <button class="icon-btn" id="btnRecarregar" title="Atualizar"><ion-icon name="refresh"></ion-icon></button>
+    </div>
+    <div class="wrap controls">
+      <div class="month-nav">
+        <button class="icon-btn sm" id="mesPrev" aria-label="Mês anterior"><ion-icon name="chevron-back"></ion-icon></button>
+        <button class="month-label" id="mesLabel"></button>
+        <button class="icon-btn sm" id="mesNext" aria-label="Próximo mês"><ion-icon name="chevron-forward"></ion-icon></button>
+      </div>
+      <div class="seg" id="segPessoa"></div>
+    </div>
+  </header>
+
+  <div class="wrap">
+    <div id="demoBanner" class="banner hidden">
+      <ion-icon name="information-circle"></ion-icon>
+      <span>Você está vendo <b>dados de exemplo</b>. Conecte sua planilha em Ajustes.</span>
+      <button class="link" data-go="ajustes">Conectar</button>
+    </div>
+  </div>
+
+  <main class="wrap">
+    <section id="tab-painel" class="tab">
+      <div id="hero"></div>
+      <div id="secoes" class="secoes"></div>
+    </section>
+
+    <section id="tab-lanc" class="tab hidden">
+      <div class="lanc-tools">
+        <div class="search"><ion-icon name="search"></ion-icon><input id="busca" type="search" placeholder="Buscar lançamento…"></div>
+        <div class="filtros">
+          <div class="seg sm" id="segTipo"></div>
+          <select id="filtroCat" class="select"></select>
+        </div>
+      </div>
+      <div id="lancResumo" class="lanc-resumo"></div>
+      <div id="lancLista"></div>
+    </section>
+
+    <section id="tab-ajustes" class="tab hidden">
+      <div id="ajustes"></div>
+    </section>
+  </main>
+
+  <nav class="bottom-nav">
+    <button data-tab="painel" class="active"><ion-icon name="pie-chart"></ion-icon><span>Painel</span></button>
+    <button data-tab="lanc"><ion-icon name="list"></ion-icon><span>Lançamentos</span></button>
+    <span class="nav-gap"></span>
+    <button id="btnFotoNav"><ion-icon name="camera"></ion-icon><span>Foto</span></button>
+    <button data-tab="ajustes"><ion-icon name="settings"></ion-icon><span>Ajustes</span></button>
+  </nav>
+  <button class="fab" id="fab" aria-label="Novo lançamento"><ion-icon name="add"></ion-icon></button>
+
+  <div class="backdrop hidden" id="backdrop"></div>
+  <div class="sheet" id="sheet" aria-hidden="true">
+    <div class="sheet-grab"></div>
+    <div class="sheet-head">
+      <h3 id="fTitulo">Novo lançamento</h3>
+      <button class="icon-btn sm" id="fFechar" aria-label="Fechar"><ion-icon name="close"></ion-icon></button>
+    </div>
+    <div class="sheet-body">
+      <div class="seg full" id="fTipo"></div>
+      <div class="valor-box" id="valorBox">
+        <span>R$</span>
+        <input id="fValor" inputmode="decimal" autocomplete="off" placeholder="0,00">
+      </div>
+      <button class="btn ghost full" id="btnFoto"><ion-icon name="camera"></ion-icon> Ler foto do cupom / comprovante</button>
+      <input type="file" id="fFoto" accept="image/*" capture="environment" hidden>
+      <label class="field"><span>Descrição</span><input id="fDesc" placeholder="Ex: Supermercado Bistek" autocomplete="off"></label>
+      <div class="field"><span>Categoria</span><div class="cat-grid" id="fCats"></div></div>
+      <div class="row2">
+        <label class="field"><span>Data</span><input id="fData" type="date"></label>
+        <label class="field"><span>Conta / cartão</span><select id="fConta" class="select"></select></label>
+      </div>
+      <div class="field"><span>Quem</span><div class="seg full" id="fQuem"></div></div>
+      <label class="field"><span>Observação</span><input id="fObs" placeholder="Opcional" autocomplete="off"></label>
+      <details class="itens hidden" id="fItensBox"><summary>Itens do cupom</summary><div id="fItens"></div></details>
+      <div class="meta" id="fMeta"></div>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn danger hidden" id="fExcluir"><ion-icon name="trash"></ion-icon></button>
+      <button class="btn primary grow" id="fSalvar">Salvar</button>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+  <div class="loading hidden" id="loading"><div class="spinner"></div><span id="loadingTxt">Lendo foto…</span></div>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
