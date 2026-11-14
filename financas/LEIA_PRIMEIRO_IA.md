@@ -20,7 +20,7 @@ Controle financeiro do casal, no estilo Mobills, com o mínimo de digitação. O
 | URL da API (App da Web, implantação "v1 app financas") | `https://script.google.com/macros/s/AKfycbz2BC-qgvF3MRE5YEuhYv9oiQgpK3B1MURX1oAN4p42mt6wJGxdNwQHN77GiCya22Ek/exec` |
 | App (PWA) | https://moneyacker.vercel.app/financas/ |
 | Código do app | Repo GitHub `Ackerss/moneyacker`, pasta `financas/`. O Vercel publica sozinho a cada push na `main`. Cópia local em `app/` |
-| Raiz do repo moneyacker | Tentativa antiga (Supabase + MacroDroid), **abandonada**. Não apagar nem mover sem o Jacson pedir. |
+| Endereço principal | https://moneyacker.vercel.app/ redireciona para `/financas/`. O app antigo (Supabase + MacroDroid) foi arquivado em `antigo/` no repo em 14/11/2026, e a pasta MONEYACKER do PC foi esvaziada a pedido do Jacson. |
 
 ## 3. O que já está funcionando (testado em 14/11/2026)
 - ✅ Planilha criada com as abas e 23 categorias padrão.
@@ -108,4 +108,5 @@ Fontes: ai.google.dev/gemini-api/docs/pricing, ai.google.dev/gemini-api/docs/mod
 
 ## 9. Histórico
 - **14/11/2026:** projeto criado. Planilha, script, app no Vercel e Gemini funcionando. Modelo trocado de `gemini-3.8-flash` para `gemini-3.1-flash-lite` depois de comparar os lançamentos da semana. Pendentes: Pluggy, celulares e bots.
+- **14/11/2026 (manhã):** endereço principal abre o app novo; app antigo arquivado em `antigo/`; contas reais (Santander Elite padrão, Nubank Gold, Itaú Ana) e categoria Filha.
 - **14/11/2026 (noite):** ícone novo do app e opção de instalar no celular (app v1.1.0, cache `financas-acker-v3`).
