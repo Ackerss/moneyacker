@@ -33,6 +33,7 @@ const CATEGORIAS_PADRAO = [
   ['Viagem', 'despesa', 'airplane', '#0ea5e9', ''],
   ['Presentes', 'despesa', 'gift', '#d946ef', ''],
   ['Impostos e taxas', 'despesa', 'receipt', '#64748b', ''],
+  ['Filha', 'despesa', 'heart', '#ec4899', ''],
   ['Outros', 'despesa', 'ellipsis-horizontal', '#94a3b8', ''],
   ['Salário', 'receita', 'wallet', '#16a34a', ''],
   ['Pró-labore', 'receita', 'storefront', '#0d9488', ''],
@@ -69,9 +70,10 @@ function configurar() {
   criarAba_(ss, ABA.LOG, ['quando', 'evento', 'detalhe']);
   if (shC.getLastRow() < 2) shC.getRange(2, 1, CATEGORIAS_PADRAO.length, 5).setValues(CATEGORIAS_PADRAO);
   if (shCT.getLastRow() < 2) {
-    shCT.getRange(2, 1, 3, 3).setValues([
-      ['Cartão de crédito', 'cartao', '#8b5cf6'],
-      ['Conta corrente', 'banco', '#3b82f6'],
+    shCT.getRange(2, 1, 4, 3).setValues([
+      ['Santander Elite', 'cartao', '#ec0000'],
+      ['Nubank Gold', 'cartao', '#820ad1'],
+      ['Itaú Ana', 'banco', '#ec7000'],
       ['Dinheiro / Pix', 'dinheiro', '#22c55e']
     ]);
   }

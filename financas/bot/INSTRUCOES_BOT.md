@@ -7,14 +7,15 @@
 
 **Nova habilidade: registrar nossas finanças.**
 
-Eu (Jacson) e a Ana temos um controle financeiro numa planilha com API. Sempre que eu te mandar uma **foto de cupom fiscal, nota, comprovante Pix/cartão**, ou uma mensagem do tipo "gastei 45 na padaria", "recebi 300 de extra", "lança 89,90 de farmácia no cartão Nubank", faça o seguinte:
+Eu (Jacson) e a Ana temos um controle financeiro numa planilha com API. Sempre que eu te mandar uma **foto de cupom fiscal, nota, comprovante Pix/cartão**, ou uma mensagem do tipo "gastei 45 na padaria", "recebi 300 de extra", "lança 89,90 de farmácia no Nubank", faça o seguinte:
 
 1. Extraia: valor total, data (padrão: hoje), descrição curta (nome do estabelecimento), tipo (`despesa` ou `receita`), categoria, conta/cartão (se eu disser) e, se for cupom de mercado, a lista de itens.
-2. Categorias válidas, use exatamente uma destas:
-   - Despesas: Mercado, Alimentação, Transporte, Casa, Contas, Saúde, Educação, Lazer, Compras, Assinaturas, Beleza, Pets, Viagem, Presentes, Impostos e taxas, Outros
+2. Contas/cartões cadastrados (use exatamente um destes nomes): **Santander Elite** (padrão, cartão do Jacson, usado online pelos dois), **Nubank Gold** (cartão do Jacson), **Itaú Ana**, **Dinheiro / Pix**. Se eu não disser, use Santander Elite.
+3. Categorias válidas, use exatamente uma destas:
+   - Despesas: Mercado, Alimentação, Transporte, Casa, Contas, Saúde, Educação, Lazer, Compras, Assinaturas, Beleza, Pets, Viagem, Presentes, Impostos e taxas, Filha, Outros
    - Receitas: Salário, Pró-labore, Extra, Rendimentos, Estorno, Outras receitas
    - Se não tiver certeza, **não mande categoria**, que a planilha classifica sozinha.
-3. Envie um POST HTTP (seguindo redirecionamentos) para a API:
+4. Envie um POST HTTP (seguindo redirecionamentos) para a API:
 
 ```
 POST https://script.google.com/macros/s/AKfycbz2BC-qgvF3MRE5YEuhYv9oiQgpK3B1MURX1oAN4p42mt6wJGxdNwQHN77GiCya22Ek/exec
@@ -30,7 +31,7 @@ Content-Type: text/plain
       "valor": 187.45,
       "tipo": "despesa",
       "categoria": "Mercado",
-      "conta": "Cartão Nubank",
+      "conta": "Santander Elite",
       "quem": "Jacson",
       "origem": "bot",
       "itens": [{"nome": "Arroz 5kg", "qtd": 1, "valor": 27.90}]
@@ -44,7 +45,7 @@ Exemplo com curl:
 curl -L -X POST "https://script.google.com/macros/s/AKfycbz2BC-qgvF3MRE5YEuhYv9oiQgpK3B1MURX1oAN4p42mt6wJGxdNwQHN77GiCya22Ek/exec" -H "Content-Type: text/plain" -d '{"action":"lancar","token":"COLE_AQUI_O_TOKEN","lancamentos":[{"descricao":"Padaria","valor":45,"quem":"Jacson"}]}'
 ```
 
-4. A resposta vem como `{"ok":true,"mensagem":"✅ Padaria — R$ 45,00 em Mercado"}`. Me responda com essa mensagem curta. Se vier `"ok":false`, me diga o erro.
+5. A resposta vem como `{"ok":true,"mensagem":"✅ Padaria — R$ 45,00 em Mercado"}`. Me responda com essa mensagem curta. Se vier `"ok":false`, me diga o erro.
 
 **Consultas:** se eu perguntar "quanto gastamos esse mês?", "como está o orçamento de mercado?" etc., faça:
 ```

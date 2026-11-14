@@ -1,7 +1,7 @@
 'use strict';
 /* Finanças Acker — app (PWA). Lê/grava na planilha via Google Apps Script. */
 
-const VERSAO = '1.1.0';
+const VERSAO = '1.1.1';
 const API_PADRAO = 'https://script.google.com/macros/s/AKfycbz2BC-qgvF3MRE5YEuhYv9oiQgpK3B1MURX1oAN4p42mt6wJGxdNwQHN77GiCya22Ek/exec';
 const LS = {
   get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
@@ -420,7 +420,7 @@ function renderLanc() {
 /* ============================== formulário ============================== */
 function abrirForm(l, tipoInicial) {
   const novo = !l;
-  S.form = l ? Object.assign({}, l) : { id: novoId(), tipo: tipoInicial || 'despesa', data: ymd(new Date()), quem: S.cfg.quem || (S.pessoa !== 'Todos' ? S.pessoa : S.d.pessoas[0]), origem: 'manual', categoria: '', conta: LS.get('fa_ultConta', '') };
+  S.form = l ? Object.assign({}, l) : { id: novoId(), tipo: tipoInicial || 'despesa', data: ymd(new Date()), quem: S.cfg.quem || (S.pessoa !== 'Todos' ? S.pessoa : S.d.pessoas[0]), origem: 'manual', categoria: '', conta: LS.get('fa_ultConta', '') || (((S.d.contas || [])[0] || {}).nome || '') };
   const f = S.form;
   $('#fTitulo').textContent = novo ? 'Novo lançamento' : 'Editar lançamento';
   $('#fValor').value = f.valor ? String(Number(f.valor).toFixed(2)).replace('.', ',') : '';

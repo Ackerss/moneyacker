@@ -35,6 +35,17 @@ Controle financeiro do casal, no estilo Mobills, com o mínimo de digitação. O
 - ⏳ **Bots Grok:** mandar o texto de `bot/INSTRUCOES_BOT.md` com o token para o bot de cada um.
 - Sugestão depois do primeiro sync do Pluggy: conferir se pagamentos de fatura viraram "transferencia" e se as categorias ficaram boas.
 
+## 4b. Segurança (verificado em 14/11/2026)
+- Planilha: privada, só o Jacson tem acesso no Google Drive.
+- API: sem o token responde "Token inválido" (testado com GET e POST). O endereço da API sozinho não abre nada.
+- App: sem token mostra só **dados de exemplo** (gerados no próprio app, não são reais).
+- GitHub `Ackerss/moneyacker`: público, mas só tem código. Nenhum token, chave ou dado real.
+- Quem tem o token: os aparelhos do Jacson e da Ana (salvo no navegador) e os bots Grok. Se vazar, gerar um novo `APP_TOKEN` e colar de novo nos aparelhos e bots.
+
+## 4c. Contas e categorias cadastradas
+- Contas: **Santander Elite** (padrão do app, cartão do Jacson, usado online pelos dois), **Nubank Gold** (Jacson), **Itaú Ana**, **Dinheiro / Pix**. Quando o Pluggy for ligado, ele pode criar contas com os nomes do banco; juntar com estas se duplicar.
+- Categoria extra: **Filha** (despesa).
+
 ## 5. Como o backend funciona
 **Abas da planilha**
 - `Lancamentos`: id, data, descricao, valor, tipo (despesa/receita/transferencia), categoria, conta, quem, origem (manual/foto/bot/pluggy), id_externo, parcela, obs, itens (JSON), criado_em, atualizado_em, excluido (exclusão é lógica, TRUE).
