@@ -1,7 +1,7 @@
 'use strict';
 /* Finanças Acker — app (PWA). Lê/grava na planilha via Google Apps Script. */
 
-const VERSAO = '1.0.1';
+const VERSAO = '1.1.0';
 const API_PADRAO = 'https://script.google.com/macros/s/AKfycbz2BC-qgvF3MRE5YEuhYv9oiQgpK3B1MURX1oAN4p42mt6wJGxdNwQHN77GiCya22Ek/exec';
 const LS = {
   get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
@@ -554,11 +554,40 @@ function comprimir(file, max, q) {
   });
 }
 
+/* ============================== instalar ============================== */
+let pedidoInstalar = null;
+const instalado = () => matchMedia('(display-mode: standalone)').matches || navigator.standalone === true;
+const ehIOS = () => /iphone|ipad|ipod/i.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+window.addEventListener('beforeinstallprompt', e => { e.preventDefault(); pedidoInstalar = e; atualizarInstalar(); });
+window.addEventListener('appinstalled', () => { pedidoInstalar = null; toast('✅ App instalado na tela inicial', 3500); atualizarInstalar(); });
+function atualizarInstalar() {
+  const off = instalado() || LS.get('fa_inst_off', false) || (!pedidoInstalar && !matchMedia('(pointer: coarse)').matches);
+  $('#instBanner').classList.toggle('hidden', off);
+  if (S.tab === 'ajustes') renderAjustes();
+}
+function cardInstalar() {
+  if (instalado()) return `<div class="aj-card inst-card"><img src="icon.svg" alt=""><div><h4>App instalado ✅</h4><p>Você está usando o app pela tela inicial.</p></div></div>`;
+  const passos = ehIOS()
+    ? `<ol class="inst-passos"><li>Abra este endereço no <b>Safari</b>.</li><li>Toque em <b>Compartilhar</b> <ion-icon name="share-outline"></ion-icon> (embaixo da tela).</li><li>Escolha <b>Adicionar à Tela de Início</b> e toque em <b>Adicionar</b>.</li></ol>`
+    : `<ol class="inst-passos"><li>Abra no <b>Chrome</b> do celular.</li><li>Toque no menu <b>⋮</b> (canto de cima).</li><li>Escolha <b>Instalar app</b> ou <b>Adicionar à tela inicial</b>.</li></ol>`;
+  return `<div class="aj-card">
+    <div class="inst-card"><img src="icon.svg" alt=""><div><h4>Instalar no celular</h4><p>Coloca o ícone do Finanças na tela inicial. Abre em tela cheia, como um app normal.</p></div></div>
+    ${pedidoInstalar ? '<button class="btn primary full" id="ajInstalar"><ion-icon name="download"></ion-icon> Instalar app</button>' : passos}
+  </div>`;
+}
+async function instalarApp() {
+  if (!pedidoInstalar) { trocarTab('ajustes'); return; }
+  pedidoInstalar.prompt();
+  const r = await pedidoInstalar.userChoice.catch(() => ({}));
+  if (r && r.outcome === 'accepted') pedidoInstalar = null;
+  atualizarInstalar();
+}
+
 /* ============================== ajustes ============================== */
 function renderAjustes() {
   const c = S.cfg;
   const desp = S.d.categorias.filter(x => x.tipo === 'despesa');
-  $('#ajustes').innerHTML = `
+  $('#ajustes').innerHTML = cardInstalar() + `
   <div class="aj-card">
     <h4>Conexão com a planilha</h4>
     <p>Cole o <b>token</b> (na planilha: menu 💰 Financeiro → Ver token de acesso). O endereço já vem preenchido. Fica salvo só neste aparelho.</p>
@@ -661,6 +690,8 @@ function ligarEventos() {
       case 'ajOrc': return salvarOrc();
       case 'ajPluggy': return syncPluggy();
       case 'ajCsv': return exportarCsv();
+      case 'ajInstalar': case 'instBtn': return instalarApp();
+      case 'instFechar': LS.set('fa_inst_off', true); return atualizarInstalar();
       case 'ajCache': localStorage.removeItem('fa_cache'); toast('Cache limpo'); return carregar();
     }
   });
@@ -745,4 +776,5 @@ ligarEventos();
 const cache = LS.get('fa_cache', null);
 if (conectado() && cache) { S.d = cache.d; render(); }
 carregar(true);
+atualizarInstalar();
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});

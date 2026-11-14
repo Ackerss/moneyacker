@@ -26,6 +26,7 @@ Controle financeiro do casal, no estilo Mobills, com o mínimo de digitação. O
 - ✅ Planilha criada com as abas e 23 categorias padrão.
 - ✅ Script autorizado e publicado. Ping responde, token errado é bloqueado.
 - ✅ App no ar e conectado no Chrome do PC do Jacson (token salvo). Salvar, ler e excluir lançamento pelo app funcionam.
+- ✅ Instalação no celular: ícone próprio (carteira branca com moeda verde em fundo roxo; arquivos `icon*.png`, `icon-maskable-*.png`, `apple-touch-icon.png`, `icon.svg`), aviso "Instalar" no painel do celular e cartão "Instalar no celular" em Ajustes (botão direto no Android, passo a passo no iPhone).
 - ✅ Gemini configurado (chave nas Propriedades) e testado com `gemini-3.1-flash-lite`: categorizou corretamente no "Testar Gemini".
 
 ## 4. O que falta (com o Jacson)
@@ -96,3 +97,4 @@ Fontes: ai.google.dev/gemini-api/docs/pricing, ai.google.dev/gemini-api/docs/mod
 
 ## 9. Histórico
 - **14/11/2026:** projeto criado. Planilha, script, app no Vercel e Gemini funcionando. Modelo trocado de `gemini-3.8-flash` para `gemini-3.1-flash-lite` depois de comparar os lançamentos da semana. Pendentes: Pluggy, celulares e bots.
+- **14/11/2026 (noite):** ícone novo do app e opção de instalar no celular (app v1.1.0, cache `financas-acker-v3`).

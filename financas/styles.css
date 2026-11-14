@@ -295,3 +295,14 @@ button { cursor: pointer; border: 0; background: none; padding: 0; }
   .cat-grid { grid-template-columns: repeat(3, 1fr); }
   .month-label { min-width: 110px; font-size: 16px; }
 }
+
+/* instalar no celular */
+.banner.inst img { width: 34px; height: 34px; border-radius: 9px; flex: none; }
+.btn.sm { padding: 8px 14px; font-size: 13px; min-height: 0; }
+.inst-card { display: flex; gap: 14px; align-items: center; margin-bottom: 12px; }
+.aj-card.inst-card { margin-bottom: 14px; }
+.inst-card img { width: 60px; height: 60px; border-radius: 15px; flex: none; box-shadow: 0 6px 16px rgba(79,70,229,.3); }
+.inst-card h4 { margin: 0 0 2px; }
+.inst-card p { margin: 0 !important; }
+.inst-passos { margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.7; }
+.inst-passos ion-icon { vertical-align: -2px; }
